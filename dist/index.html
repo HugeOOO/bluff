@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#17151c">
+  <meta name="description" content="Bluff, en app för ord och hemliga roller.">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icons/icon-192.png">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <link rel="stylesheet" href="./styles.css?v=16">
+  <script type="module" src="./app.js?v=16"></script>
+  <title>Bluff</title>
+</head>
+<body>
+  <main class="shell">
+    <div class="round-progress" role="progressbar" aria-label="Spelsteg" aria-valuemin="0" aria-valuemax="5" aria-valuenow="1"><i></i></div>
+    <section id="screen"></section>
+    <footer><span id="offline" role="status">Förbereder offlineläge …</span><button id="install" hidden>Installera appen</button></footer>
+  </main>
+</body></html>
