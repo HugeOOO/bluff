@@ -1,14 +1,235 @@
 const screen = document.querySelector('#screen');
-const offlineStatus = document.querySelector('#offline');
 const installButton = document.querySelector('#install');
-const pairs = [['Popcorn','Biokväll'],['Kompass','Utflykt'],['Paraply','Väder'],['Fyr','Kusten'],['Piano','Konsert'],['Kanelbulle','Fika'],['Hängmatta','Semester'],['Skridskor','Vinter']];
+const pairs = [
+  ['Popcorn', 'Biokväll', 'Mat'], ['Kompass', 'Utflykt', 'Utrustning'],
+  ['Paraply', 'Väder', 'Föremål'], ['Fyr', 'Kusten', 'Byggnader'],
+  ['Piano', 'Konsert', 'Musikinstrument'], ['Kanelbulle', 'Fika', 'Bakverk'],
+  ['Hängmatta', 'Semester', 'Möbler'], ['Skridskor', 'Vinter', 'Sportutrustning']
+];
 const names = ['', '', '', ''];
-let stage = 0, count = 1, all = 0, none = 0, turn = 0, starter = 0;
+// History follows the player when the order changes; special rounds do not count.
+const roleHistory = names.map(() => ({ debt: 0, last: 0 }));
+let balancedRounds = 0;
+let hintMode = 'clue';
+const hintFor = (entry, mode) => mode === 'category' ? entry[2] : mode === 'clue' ? entry[1] : '';
+function roleText(index) {
+  if (!bluffers.has(index)) return pair[0];
+  const hint = hintFor(pair, hintMode);
+  return 'Du bluffar' + (hint ? '\n' + hint : '');
+}
+let stage = 0, count = 1, specialChance = 0, turn = 0, starter = 0;
 let pair, bluffers, seen = false;
 const label = i => names[i].trim() || 'Spelare ' + (i + 1);
 const escape = value => value.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const button = (id, title) => '<button type="button" id="'+id+'">'+title+'</button>';
 function on(id, fn) { document.getElementById(id).onclick = fn; }
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+const motion = { duration: 220, easing: 'cubic-bezier(.2,.8,.2,1)' };
+// Replace immediately: a hidden role must never linger in an outgoing layer.
+function changeText(element, value, direction = 0, { fade = true, animate = true } = {}) {
+  const text = String(value);
+  if (element.textContent === text) return;
+  const previous = element.textContent;
+  element.getAnimations().forEach(animation => animation.cancel());
+  element.textContent = text;
+  if (!previous || !animate || reducedMotion.matches) return;
+  element.animate([
+    { ...(fade ? { opacity: .25 } : {}), translate: '0 ' + (direction ? direction * 7 : 3) + 'px' },
+    { ...(fade ? { opacity: 1 } : {}), translate: '0 0' }
+  ], motion);
+}
+// Each decimal place rolls independently; unchanged digits stay still.
+const numberValues = new WeakMap();
+function settleDigit(column, value) {
+  column.animations.forEach(animation => animation.cancel());
+  column.animations = [];
+  column.current.textContent = value;
+  column.cell.replaceChildren(column.current);
+  column.value = value;
+}
+function rollDigit(column) {
+  if (column.animations.length || column.value === column.target) return;
+  const outgoing = column.current;
+  const incoming = document.createElement('span');
+  incoming.textContent = column.target;
+  column.cell.append(incoming);
+  column.current = incoming;
+  column.value = column.target;
+  // Increasing values enter above and push the old glyph below.
+  const offset = column.direction > 0 ? -100 : 100;
+  const options = { duration: 180, easing: motion.easing };
+  const exit = outgoing.animate([
+    { transform: 'translateY(0)', filter: 'blur(0px)' },
+    { transform: 'translateY(' + -offset + '%)', filter: 'blur(.5px)' }
+  ], options);
+  const entry = incoming.animate([
+    { transform: 'translateY(' + offset + '%)', filter: 'blur(.5px)' },
+    { transform: 'translateY(0)', filter: 'blur(0px)' }
+  ], options);
+  column.animations = [exit, entry];
+  entry.onfinish = () => {
+    outgoing.remove();
+    column.animations = [];
+    if (column.cell.isConnected) rollDigit(column);
+  };
+}
+function changeNumber(element, target, { animate = true, prefix = '', suffix = '', places = 2 } = {}) {
+  let state = numberValues.get(element);
+  if (state?.target === target) return;
+  if (!state) {
+    const reading = document.createElement('span');
+    reading.className = 'sr-only';
+    const visual = document.createElement('span');
+    visual.className = 'number-visual';
+    visual.setAttribute('aria-hidden', 'true');
+    const number = document.createElement('span');
+    number.className = 'number-digits';
+    const digits = Array.from({ length: places }, () => {
+      const cell = document.createElement('span');
+      cell.className = 'digit-cell';
+      const current = document.createElement('span');
+      cell.append(current);
+      number.append(cell);
+      return { cell, current, value: '', target: '', direction: 1, animations: [] };
+    });
+    visual.append(document.createTextNode(prefix), number, document.createTextNode(suffix));
+    element.replaceChildren(reading, visual);
+    state = { target, reading, digits };
+    numberValues.set(element, state);
+    animate = false;
+  }
+  const direction = target >= state.target ? 1 : -1;
+  state.target = target;
+  state.reading.textContent = prefix + target + suffix;
+  const text = String(target).padStart(state.digits.length, ' ');
+  state.digits.forEach((column, index) => {
+    column.target = text[index];
+    column.cell.classList.toggle('digit-empty', text[index] === ' ');
+    column.direction = direction;
+    if (!animate || reducedMotion.matches) settleDigit(column, text[index]);
+    else rollDigit(column);
+  });
+}
+// Percentage drums move continuously, including through intermediate digits.
+const percentDrums = new WeakMap();
+function changePercent(element, target, animate, prefix = '') {
+  let state = percentDrums.get(element);
+  if (state?.target === target) return;
+  if (!state) {
+    const reading = document.createElement('span');
+    reading.className = 'sr-only';
+    const visual = document.createElement('span');
+    visual.className = 'number-visual';
+    visual.setAttribute('aria-hidden', 'true');
+    const number = document.createElement('span');
+    number.className = 'number-digits';
+    const digits = Array.from({ length: 3 }, () => {
+      const cell = document.createElement('span');
+      cell.className = 'digit-cell drum-cell';
+      const belt = document.createElement('span');
+      belt.className = 'digit-belt';
+      for (let i = 0; i < 30; i++) {
+        const glyph = document.createElement('span');
+        glyph.textContent = String(9 - i % 10);
+        belt.append(glyph);
+      }
+      cell.append(belt);
+      number.append(cell);
+      return { cell, belt };
+    });
+    visual.append(document.createTextNode(prefix), number, document.createTextNode(' %'));
+    element.replaceChildren(reading, visual);
+    state = { value: target, target, reading, digits, frame: null, last: 0 };
+    percentDrums.set(element, state);
+    animate = false;
+  }
+  state.target = target;
+  state.reading.textContent = prefix + target + ' %';
+  function paint(speed = 0) {
+    state.digits.forEach(({cell, belt}, index) => {
+      const place = 10 ** (2 - index);
+      // Higher places roll only during the carry (e.g. 59 -> 60).
+      const position = Math.floor(state.value / place) + Math.max(0, state.value % place - (place - 1));
+      const row = 19 - (position % 10);
+      cell.classList.toggle('digit-empty', place > Math.max(1, state.value, state.target));
+      belt.style.transform = 'translateY(' + (-row * 1.5) + 'em)';
+      belt.style.filter = speed ? 'blur(' + Math.min(.6, speed * .08) + 'px)' : '';
+    });
+  }
+  if (!animate || reducedMotion.matches) {
+    if (state.frame !== null) cancelAnimationFrame(state.frame);
+    state.frame = null;
+    state.value = target;
+    paint();
+    return;
+  }
+  // Retarget the running belt instead of queuing or restarting an animation.
+  if (state.frame !== null) return;
+  state.last = performance.now();
+  function tick(now) {
+    if (!element.isConnected) { state.frame = null; return; }
+    const elapsed = Math.min(40, Math.max(0, now - state.last));
+    state.last = now;
+    const distance = state.target - state.value;
+    if (reducedMotion.matches || Math.abs(distance) < .015) {
+      state.value = state.target;
+      state.frame = null;
+      paint();
+      return;
+    }
+    const step = distance * (1 - Math.exp(-elapsed / 40));
+    state.value += step;
+    paint(Math.abs(step));
+    state.frame = requestAnimationFrame(tick);
+  }
+  state.frame = requestAnimationFrame(tick);
+}
+function playerRow(name, i, list) {
+  const li = document.createElement('li');
+  li.innerHTML = '<b>'+String(i+1).padStart(2,'0')+'</b><input maxlength="40" aria-label="Namn på spelare '+(i+1)+'" placeholder="Spelare '+(i+1)+'"><button class="grip" aria-label="Flytta spelare '+(i+1)+' med drag eller piltangenter"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true" focusable="false"><path d="M3.5 6.5h11M3.5 11.5h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>';
+  const input = li.querySelector('input');
+  input.value = name;
+  input.oninput = () => { names[i] = input.value; };
+  bindDrag(li, i, list);
+  return li;
+}
+function changePlayers(delta, list) {
+  if (list.classList.contains('sorting')) return;
+  if ((delta > 0 && names.length >= 20) || (delta < 0 && names.length <= 3)) return;
+  const previousHeight = list.getBoundingClientRect().height;
+  list.getAnimations().forEach(animation => animation.cancel());
+  list.querySelectorAll('.leaving').forEach(row => row.remove());
+  let row;
+  if (delta > 0) {
+    names.push('');
+    roleHistory.push({ debt: 0, last: 0 });
+    row = playerRow('', names.length - 1, list);
+    list.append(row);
+  } else {
+    names.pop();
+    roleHistory.pop();
+    row = list.lastElementChild;
+    const top = row.offsetTop;
+    const height = row.getBoundingClientRect().height;
+    row.classList.add('leaving');
+    row.inert = true;
+    row.setAttribute('aria-hidden', 'true');
+    Object.assign(row.style, { position: 'absolute', top: top + 'px', width: '100%', height: height + 'px' });
+  }
+  count = Math.min(count, names.length - 1);
+  changeNumber(document.querySelector('#player-count'), names.length);
+  document.querySelector('#less').disabled = names.length <= 3;
+  document.querySelector('#more').disabled = names.length >= 20;
+  if (reducedMotion.matches) {
+    if (delta < 0) row.remove();
+    return;
+  }
+  const targetHeight = list.getBoundingClientRect().height;
+  list.animate([{ height: previousHeight + 'px' }, { height: targetHeight + 'px' }], motion);
+  const frames = [{ opacity: 0, translate: '0 10px', scale: '.98' }, { opacity: 1, translate: '0 0', scale: '1' }];
+  const animation = row.animate(delta > 0 ? frames : [...frames].reverse(), { ...motion, duration: delta > 0 ? 220 : 150 });
+  if (delta < 0) animation.onfinish = () => row.remove();
+}
 function go(next) {
   const direction = next < stage ? 'back' : 'forward';
   stage = next;
@@ -18,11 +239,20 @@ function go(next) {
 }
 function setupRound() {
   const roll = Math.random()*100;
-  const n = roll < all ? names.length : roll < all + none ? 0 : count;
+  const n = roll < specialChance / 2 ? names.length : roll < specialChance ? 0 : count;
   const order = names.map((_, i) => i);
   for (let i = order.length-1; i>0; i--) {
     const j = Math.floor(Math.random()*(i+1));
     [order[i],order[j]] = [order[j],order[i]];
+  }
+  if (n > 0 && n < names.length) {
+    balancedRounds++;
+    roleHistory.forEach(history => { history.debt += n / names.length; });
+    order.sort((a, b) => roleHistory[b].debt - roleHistory[a].debt || roleHistory[a].last - roleHistory[b].last);
+    order.slice(0, n).forEach(index => {
+      roleHistory[index].debt -= 1;
+      roleHistory[index].last = balancedRounds;
+    });
   }
   bluffers = new Set(order.slice(0,n));
   starter = Math.floor(Math.random()*names.length);
@@ -56,7 +286,10 @@ function bindDrag(row, index, list) {
     frame = requestAnimationFrame(follow);
   }
   function commit(destination) {
-    if (destination !== index) names.splice(destination, 0, names.splice(index, 1)[0]);
+    if (destination !== index) {
+      names.splice(destination, 0, names.splice(index, 1)[0]);
+      roleHistory.splice(destination, 0, roleHistory.splice(index, 1)[0]);
+    }
     render();
     screen.querySelectorAll('.grip')[destination].focus({preventScroll:true});
   }
@@ -69,7 +302,7 @@ function bindDrag(row, index, list) {
     if (!event.isPrimary || event.button !== 0) return;
     if (list.classList.contains('sorting')) return;
     active = event.pointerId;
-    rows = [...list.children];
+    rows = [...list.children].filter(item => !item.classList.contains('leaving'));
     slots = rows.map(item => item.getBoundingClientRect().top + window.scrollY);
     pointerY = event.clientY;
     startY = pointerY + window.scrollY;
@@ -91,7 +324,7 @@ function bindDrag(row, index, list) {
     const placed = screen.querySelectorAll('li')[finalIndex];
     if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
       const distance = previousTop - placed.getBoundingClientRect().top;
-      placed.animate([{transform:'translateY('+distance+'px)', scale:'1.025'}, {transform:'none', scale:'1'}],
+      placed.animate([{transform:'translateY('+distance+'px)', scale:'1.015'}, {transform:'none', scale:'1'}],
         {duration:180, easing:'cubic-bezier(.2,.8,.2,1)'});
     }
   }
@@ -106,136 +339,216 @@ function bindDrag(row, index, list) {
 function render() {
   delete screen.dataset.entry;
   screen.dataset.stage = stage;
-  const progress = document.querySelector('.round-progress');
-  progress.setAttribute('aria-valuenow', String(stage + 1));
-  progress.setAttribute('aria-valuetext', 'Steg ' + (stage + 1) + ' av 5');
-  progress.style.setProperty('--progress', ((stage + 1) * 20) + '%');
   document.querySelector('footer').hidden = stage > 0;
   const title = text => '<h1 tabindex="-1">'+text+'</h1>';
   if (stage === 0) {
-    screen.innerHTML = title('Spelare')+'<div class="counter">'+button('less','−')+'<strong>'+names.length+' spelare</strong>'+button('more','+')+'</div><ol></ol>'+button('next','Till regler');
+    screen.innerHTML = title('Spelare')+'<div class="counter">'+button('less','−')+'<strong role="status" aria-atomic="true"><span id="player-count" class="changing-value">'+names.length+'</span> spelare</strong>'+button('more','+')+'</div><ol></ol>'+button('next','Till regler');
+    changeNumber(document.querySelector('#player-count'), names.length, { animate: false });
     const list = screen.querySelector('ol');
-    names.forEach((name,i) => {
-      const li = document.createElement('li');
-      li.innerHTML = '<b>'+String(i+1).padStart(2,'0')+'</b><input maxlength="40" aria-label="Namn på spelare '+(i+1)+'" placeholder="Spelare '+(i+1)+'"><button class="grip" aria-label="Flytta spelare '+(i+1)+' med drag eller piltangenter">⠿</button>';
-      const input = li.querySelector('input');
-      input.value = name; input.oninput = () => { names[i] = input.value; };
-      bindDrag(li,i,list);
-      list.append(li);
-    });
+    names.forEach((name,i) => list.append(playerRow(name,i,list)));
     for (const [id,delta] of [['less',-1],['more',1]]) {
       const b = document.getElementById(id);
       b.setAttribute('aria-label',delta>0?'Lägg till spelare':'Ta bort sista spelaren');
       b.disabled = delta>0 ? names.length>=20 : names.length<=3;
-      b.onclick = () => { if(delta>0) names.push(''); else names.pop(); count=Math.min(count,names.length-1); render(); };
+      b.onclick = () => changePlayers(delta, list);
     }
     on('next',()=>go(1));
   } else if (stage === 1) {
     function field(id, text, value, min, max) {
       return '<div class="rule"><label for="'+id+'">'+text+'</label><div class="slider">'+
-        '<span class="bubble" aria-hidden="true"></span><input type="range" id="'+id+
-        '" min="'+min+'" max="'+max+'" value="'+value+'"></div><div class="presets"></div></div>';
+        '<span class="bubble" aria-hidden="true"><span class="changing-value"></span></span><input type="range" id="'+id+
+        '" min="'+min+'" max="'+max+'" value="'+value+'"></div></div>';
     }
     screen.innerHTML = title('Regler')+'<form>'+
-      field('count','Bluffare i vanlig runda',count,1,names.length-1)+
-      '<details class="exceptions"'+(all || none ? ' open' : '')+'><summary>Specialrundor <span id="special-chance"></span></summary>'+
-      field('all','Alla bluffar',all,0,100)+field('none','Ingen bluffar',none,0,100)+'</details>'+
-      '<p id="odds"></p><button>Dela ut rollkort</button></form>'+button('back','Tillbaka till spelarna');
-    const form = screen.querySelector('form');
-    const controls = [...form.querySelectorAll('input')];
-    for (const input of controls) {
-      const choices = input.id === 'count' ? [1,2,3,Number(input.max)] : [0,10,25,50,100];
-      const rule = input.closest('.rule');
-      const presets = rule.querySelector('.presets');
-      function resumeDirectInput() { rule.classList.remove('preset-motion'); }
-      input.addEventListener('pointerdown', resumeDirectInput);
-      input.addEventListener('keydown', resumeDirectInput);
+      '<div class="rule count-rule" role="group" aria-labelledby="count-label"><span id="count-label" class="rule-label">Antal Bluffare</span>'+
+      '<input type="number" id="count" min="1" max="'+(names.length-1)+'" value="'+count+'" hidden>'+
+      '<div class="counter rule-counter"><button type="button" id="count-less" aria-label="Minska antal bluffare">−</button>'+
+      '<strong id="bluffer-count" role="status" aria-atomic="true"></strong>'+
+      '<button type="button" id="count-more" aria-label="Öka antal bluffare">+</button></div></div>'+
 
-      for (const value of new Set(choices.filter(n => n <= Number(input.max)))) {
-        const pick = document.createElement('button');
-        pick.type = 'button';
-        pick.value = value;
-        pick.textContent = value + (input.id === 'count' ? '' : ' %');
-        pick.setAttribute('aria-label', input.labels[0].textContent + ', ' + pick.textContent);
-        pick.onclick = () => {
-          rule.classList.add('preset-motion');
-          input.value = value;
-          refresh();
-        };
-        presets.append(pick);
+      field('special','Alla eller ingen bluffar',specialChance,0,100)+
+      '<fieldset class="hint-setting"><legend class="rule-label">Bluffarens information</legend><div class="hint-options">'+
+      [['none','Ingen ledtråd'],['category','Kategori'],['clue','Ledtråd']].map(([value, text]) =>
+        '<label><input type="radio" name="hint-mode" value="'+value+'"'+(hintMode === value ? ' checked' : '')+'><span>'+text+'</span></label>'
+      ).join('')+'</div></fieldset>'+
+      '<button>Dela ut rollkort</button></form>'+button('back','Tillbaka till spelarna');
+    const form = screen.querySelector('form');
+    const controls = [...form.querySelectorAll('input[type=number], input[type=range]')];
+    const percentageControls = controls.filter(input => input.id !== 'count');
+    const rulerControllers = new Map();
+    function stopRulers() { rulerControllers.forEach(stop => stop()); }
+    function paintRuler(input, value = input.valueAsNumber) {
+      if (input.id === 'count') return;
+      const rule = input.closest('.rule');
+      const radius = Math.max(1, rule.querySelector('.slider').clientWidth / 2 - 8);
+      const step = input.id === 'count' ? 32 : 10;
+      const min = Number(input.min), max = Number(input.max);
+      for (const tick of rule.querySelectorAll('.ruler-ticks i')) {
+        const n = Number(tick.dataset.value);
+        const angle = (n - value) * step / radius;
+        const visible = n >= min && n <= max && Math.abs(angle) < 1.45;
+        tick.hidden = !visible;
+        if (!visible) continue;
+        const depth = Math.cos(angle);
+        tick.style.transform = 'translateX(' + (radius * Math.sin(angle)) + 'px) translateY(-50%) scale(' + depth + ', ' + (.3 + .7 * depth) + ')';
+        tick.style.opacity = String(Math.pow(depth, 1.8));
       }
     }
-    function refresh() {
+
+    for (const input of percentageControls) {
+      const rule = input.closest('.rule');
+      rule.classList.toggle('percent-rule', input.id !== 'count');
+      const track = rule.querySelector('.slider');
+      const ticks = document.createElement('span');
+      ticks.className = 'ruler-ticks';
+      ticks.setAttribute('aria-hidden', 'true');
+      const step = input.id === 'count' ? 32 : 10;
+      rule.style.setProperty('--tick-step', step + 'px');
+      for (let value = Number(input.min); value <= Number(input.max); value++) {
+        const tick = document.createElement('i');
+        tick.dataset.value = value;
+        if (input.id === 'count' || value % 10 === 0) tick.classList.add('major');
+        else if (value % 5 === 0) tick.classList.add('mid');
+        ticks.append(tick);
+      }
+      const rulerWindow = document.createElement('span');
+      rulerWindow.className = 'ruler-window';
+      rulerWindow.setAttribute('aria-hidden', 'true');
+      rulerWindow.append(ticks);
+      track.append(rulerWindow);
+    }
+    function refresh(animate = false, direct = false) {
       for (const input of controls) {
         const percent = input.id !== 'count';
-        if (percent) {
-          const other = form.elements[input.id === 'all' ? 'none' : 'all'];
-          input.max = 100 - other.valueAsNumber;
+        if (!percent) {
+          changeNumber(document.querySelector('#bluffer-count'), input.valueAsNumber, { animate });
+          document.querySelector('#count-less').disabled = input.valueAsNumber <= Number(input.min);
+          document.querySelector('#count-more').disabled = input.valueAsNumber >= Number(input.max);
+          continue;
         }
         const min = Number(input.min), max = Number(input.max);
-        const fraction = (input.valueAsNumber-min) / (max-min || 1);
         const rule = input.closest('.rule');
+        if (percent) rule.classList.toggle('direct-input', !animate || direct);
         const text = input.value + (percent ? ' %' : '');
-        rule.style.setProperty('--fill', (100*fraction)+'%');
-        rule.querySelector('.bubble').textContent = text;
+        paintRuler(input);
+        const output = rule.querySelector('.bubble .changing-value');
+        if (percent) changePercent(output, input.valueAsNumber, animate);
+        else changeNumber(output, input.valueAsNumber);
         input.setAttribute('aria-valuetext',text);
         input.disabled = min === max;
-        for (const pick of rule.querySelectorAll('button')) {
-          pick.disabled = Number(pick.value) > max;
-          pick.setAttribute('aria-pressed',String(pick.value === input.value));
-        }
       }
-      document.querySelector('#special-chance').textContent = (form.elements.all.valueAsNumber + form.elements.none.valueAsNumber)+' %';
-      document.querySelector('#odds').textContent = 'Vanlig runda: '+(100-form.elements.all.valueAsNumber-form.elements.none.valueAsNumber)+' %';
     }
-    const countInput = form.elements.count;
-    const countRule = countInput.closest('.rule');
-    const countTrack = countRule.querySelector('.slider');
-    countRule.classList.add('snap-rule');
-    let dragPointer = null;
-    let originalCount;
-    function trackPointer(event) {
-      const rect = countTrack.getBoundingClientRect();
-      const fraction = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
-      countInput.value = Math.round(1 + fraction * (Number(countInput.max) - 1));
-      refresh();
-      countRule.style.setProperty('--fill', (fraction * 100) + '%');
+    for (const input of percentageControls) {
+      const rule = input.closest('.rule');
+      const track = rule.querySelector('.slider');
+      const step = input.id === 'count' ? 32 : 10;
+      let pointer = null, startX = 0, original = 0, position = 0;
+      let velocity = 0, lastX = 0, lastTime = 0, frame = null;
+      const clamp = value => Math.max(Number(input.min), Math.min(Number(input.max), value));
+      const snapPercent = value => Math.max(Math.ceil(Number(input.min) / 5) * 5,
+        Math.min(Math.floor(Number(input.max) / 5) * 5, Math.round(value / 5) * 5));
+      function stop() {
+        if (frame !== null) {
+          input.value = snapPercent(position);
+          position = input.valueAsNumber;
+        }
+        if (frame !== null) cancelAnimationFrame(frame);
+        frame = null;
+        velocity = 0;
+        rule.classList.remove('coasting');
+        if (pointer === null) rule.classList.remove('tracking');
+      }
+      rulerControllers.set(input, stop);
+      function apply(value) {
+        position = clamp(value);
+        input.value = Math.round(position);
+        refresh(true, true);
+        paintRuler(input, position);
+      }
+      function move(event) {
+        if (event.clientX !== lastX) {
+          const elapsed = Math.max(1, event.timeStamp - lastTime);
+          const speed = (lastX - event.clientX) / (step * elapsed);
+          velocity = .65 * speed + .35 * velocity;
+          const limit = input.id === 'count' ? .03 : .15;
+          velocity = Math.max(-limit, Math.min(limit, velocity));
+          lastX = event.clientX;
+          lastTime = event.timeStamp;
+        }
+        apply(original - (event.clientX - startX) / step);
+      }
+      function snap(momentum = false) {
+        input.value = momentum ? snapPercent(position) : clamp(Math.round(position));
+        position = input.valueAsNumber;
+        frame = null;
+        rule.classList.remove('tracking', 'coasting');
+        refresh(true);
+      }
+      track.onpointerdown = event => {
+        if (pointer !== null || !event.isPrimary || event.button !== 0 || input.disabled) return;
+        event.preventDefault();
+        stopRulers();
+        refresh(true);
+        input.focus({preventScroll:true});
+        pointer = event.pointerId;
+        startX = lastX = event.clientX;
+        lastTime = event.timeStamp;
+        original = position = input.valueAsNumber;
+        track.setPointerCapture(pointer);
+        rule.classList.add('tracking');
+      };
+      track.onpointermove = event => { if (event.pointerId === pointer) move(event); };
+      function finish(event) {
+        if (event.pointerId !== pointer) return;
+        const released = event.type === 'pointerup';
+        if (released) move(event);
+        else apply(original);
+        pointer = null;
+        if (!released || reducedMotion.matches || event.timeStamp - lastTime > 100 || Math.abs(velocity) * step < .12) {
+          snap();
+          return;
+        }
+        rule.classList.add('coasting');
+        let previous = performance.now();
+        function coast(now) {
+          if (!track.isConnected) { stop(); return; }
+          if (reducedMotion.matches) { snap(true); return; }
+          const elapsed = Math.min(40, now - previous);
+          previous = now;
+          const decay = Math.exp(-elapsed / 180);
+          const next = position + velocity * 180 * (1 - decay);
+          velocity *= decay;
+          apply(next);
+          if (next !== position || Math.abs(velocity) * step < .025) snap(true);
+          else frame = requestAnimationFrame(coast);
+        }
+        frame = requestAnimationFrame(coast);
+      }
+      track.onpointerup = track.onpointercancel = track.onlostpointercapture = finish;
     }
-    countTrack.onpointerdown = event => {
-      if (dragPointer !== null || !event.isPrimary || event.button !== 0) return;
-      event.preventDefault();
-      countInput.focus({preventScroll:true});
-      dragPointer = event.pointerId;
-      originalCount = countInput.value;
-      countTrack.setPointerCapture(dragPointer);
-      countRule.classList.remove('preset-motion');
-      countRule.classList.add('tracking');
-      trackPointer(event);
-    };
-    countTrack.onpointermove = event => {
-      if (event.pointerId === dragPointer) trackPointer(event);
-    };
-    function settle(event) {
-      if (event.pointerId !== dragPointer) return;
-      if (event.type === 'pointerup') trackPointer(event);
-      else countInput.value = originalCount;
-      // Commit the free position before enabling the snap transition.
-      getComputedStyle(countRule).getPropertyValue('--fill');
-      dragPointer = null;
-      countRule.classList.remove('tracking');
-      refresh();
+    for (const [id, delta] of [['count-less', -1], ['count-more', 1]]) {
+      on(id, () => {
+        stopRulers();
+        const input = form.elements.count;
+        input.value = Math.max(Number(input.min), Math.min(Number(input.max), input.valueAsNumber + delta));
+        refresh(true);
+      });
     }
-    countTrack.onpointerup = countTrack.onpointercancel = countTrack.onlostpointercapture = settle;
-    function save(){ [count,all,none]=controls.map(input=>input.valueAsNumber); }
-    form.oninput=refresh; refresh();
+    const resizeRulers = new ResizeObserver(() => {
+      if (!form.isConnected) { resizeRulers.disconnect(); return; }
+      controls.forEach(input => paintRuler(input));
+    });
+    resizeRulers.observe(form);
+    function save(){ stopRulers(); refresh(); [count,specialChance]=controls.map(input=>input.valueAsNumber); hintMode = form.elements['hint-mode'].value; }
+    form.oninput=()=>{ stopRulers(); refresh(true, true); }; refresh();
     form.onsubmit=e=>{ e.preventDefault(); save(); setupRound(); };
     on('back',()=>{ if(form.checkValidity()) save(); go(0); });
   } else if (stage === 2) {
-    screen.innerHTML = title(escape(label(turn)))+'<button class="secret" id="hold" aria-live="polite">Håll för att kika</button>'+button('next',turn===names.length-1?'Starta rundan':'Nästa spelare');
+    screen.innerHTML = title(escape(label(turn)))+'<button class="secret" id="hold" aria-live="polite"><span class="secret-copy">Håll för att kika</span></button>'+button('next',turn===names.length-1?'Starta rundan':'Nästa spelare');
     const hold = document.querySelector('#hold'), next = document.querySelector('#next');
     next.hidden=!seen;
-    function reveal(){ hold.classList.add('open'); hold.classList.toggle('bluff',bluffers.has(turn)); hold.textContent=bluffers.has(turn)?'Du bluffar\n'+pair[1]:pair[0]; seen=true; next.hidden=true; }
-    function hide(){ hold.classList.remove('open','bluff'); hold.textContent='Håll för att kika'; next.hidden=!seen; }
+    function reveal(){ hold.classList.add('open'); hold.classList.toggle('bluff',bluffers.has(turn)); changeText(hold.querySelector('.secret-copy'), roleText(turn)); seen=true; next.hidden=true; }
+    function hide(){ hold.classList.remove('open','bluff'); changeText(hold.querySelector('.secret-copy'), 'Håll för att kika'); next.hidden=!seen; }
     hold.onpointerdown=e=>{ if(e.isPrimary && e.button===0){ hold.setPointerCapture(e.pointerId); reveal(); } };
     hold.onpointerup=hold.onpointercancel=hold.onlostpointercapture=hold.onblur=hide;
     hold.oncontextmenu=e=>e.preventDefault();
@@ -252,7 +565,7 @@ function render() {
     screen.innerHTML = title('Resultat')+'<dl class="results">'+
       resultCard('word','Hemligt ord',pair[0])+
       resultCard('roles','Bluffare',who || 'Ingen bluffade')+
-      resultCard('clue','Ledtråd',who ? pair[1] : 'Ingen ledtråd delades ut')+
+      resultCard('clue',hintMode === 'category' ? 'Kategori' : 'Ledtråd',who && hintFor(pair, hintMode) ? hintFor(pair, hintMode) : 'Ingen ledtråd delades ut')+
       '</dl>'+button('again','Spela igen')+button('back','Ändra spelare och regler');
     on('again',setupRound); on('back',()=>go(0));
   }
@@ -280,18 +593,8 @@ window.addEventListener('appinstalled', () => {
   installButton.hidden = true;
 });
 
-async function prepareOffline() {
-  try {
-    await navigator.serviceWorker.register('./sw.js');
-    await navigator.serviceWorker.ready;
-    offlineStatus.textContent = 'Redo att användas offline';
-  } catch {
-    offlineStatus.textContent = 'Offlineläget kunde inte startas';
-  }
-}
-
 if ('serviceWorker' in navigator) {
-  prepareOffline();
-} else {
-  offlineStatus.textContent = 'Offlineläget kräver localhost eller HTTPS';
+  navigator.serviceWorker.register('./sw.js').catch(error => {
+    console.warn('Offlineläget kunde inte startas', error);
+  });
 }

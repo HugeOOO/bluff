@@ -14,7 +14,7 @@ python3 -m http.server 8765 --bind 127.0.0.1 --directory dist
 
 - Lägg till spelare, välj regler och dela ut korten. Håll på kortet (eller håll ned mellanslag eller Enter med knappen fokuserad), släpp och gå vidare till nästa spelare.
 - Använd **Installera appen** när knappen visas eller webbläsarens installationsmeny om den finns. På iPhone öppnar du en HTTPS-version i Safari och använder **Dela → Lägg till på hemskärmen**.
-- Vänta tills sidan visar **Redo att användas offline**. Stoppa sedan servern med Ctrl+C och ladda om appen för att prova offlineläget.
+- Offlineläget förbereds automatiskt vid första besöket. Ladda om sidan efter första besöket, stoppa sedan servern med Ctrl+C och ladda om igen för att prova offlineläget.
 
 För att prova PWA-funktioner på en annan enhet, servera innehållet i `dist/` över HTTPS. Webbläsaren kräver en säker webbkontext för service workers, med undantag för lokala adresser som `localhost`.
 
