@@ -43,6 +43,9 @@ const pairs = [
   ['Piano', 'Konsert', 'Musikinstrument'], ['Kanelbulle', 'Fika', 'Bakverk'],
   ['Hängmatta', 'Semester', 'Möbler'], ['Skridskor', 'Vinter', 'Sportutrustning']
 ];
+// Keep development rounds predictable; turn this off to restore the word bank.
+const usePlaceholderContent = true;
+const placeholderPair = ['Hemligt ord', 'Ledtråd', 'Kategori'];
 const names = ['', '', '', ''];
 // History follows the player when the order changes; special rounds do not count.
 const roleHistory = names.map(() => ({ debt: 0, last: 0 }));
@@ -293,7 +296,7 @@ function setupRound() {
   }
   bluffers = new Set(order.slice(0,n));
   starter = Math.floor(Math.random()*names.length);
-  pair = pairs[Math.floor(Math.random()*pairs.length)];
+  pair = usePlaceholderContent ? placeholderPair : pairs[Math.floor(Math.random()*pairs.length)];
   turn = 0; seen = false; go(2);
 }
 function bindDrag(row, index, list) {
