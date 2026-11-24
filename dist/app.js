@@ -1,7 +1,7 @@
-import { createPresetStore } from './presets.js?v=111';
-import { createDiscussionTimer } from './discussion-timer.js?v=111';
-import { words } from './words.js?v=111';
-import { createWordDeck } from './word-deck.js?v=111';
+import { createPresetStore } from './presets.js?v=112';
+import { createDiscussionTimer } from './discussion-timer.js?v=112';
+import { words } from './words.js?v=112';
+import { createWordDeck } from './word-deck.js?v=112';
 
 const wordDeck = createWordDeck(words);
 const wordPackages = [...new Set(words.map(entry => entry.category))];
@@ -62,11 +62,7 @@ let balancedRounds = 0;
 let hintMode = 'clue';
 let discussionSeconds = 0;
 const timerOptions = [[60, '1 min'], [180, '3 min'], [300, '5 min']];
-const ruleShortcuts = [
-  { name: 'Första gången', count: 1, special: 0, hint: 'clue' },
-  { name: 'Klassiskt', count: 1, special: 0, hint: 'none' },
-  { name: 'Kaos', count: 2, special: 25, hint: 'category' }
-];
+
 const hintFor = (entry, mode) => mode === 'category' ? entry[2] : mode === 'clue' ? entry[1] : '';
 function roleText(index) {
   if (!bluffers.has(index)) return pair[0];
@@ -274,14 +270,14 @@ function changePercent(element, target, animate, prefix = '') {
       number.append(cell);
       return { cell, belt };
     });
-    visual.append(document.createTextNode(prefix), number, document.createTextNode(' %'));
+    visual.append(document.createTextNode(prefix), number, document.createTextNode(' % chans'));
     element.replaceChildren(reading, visual);
     state = { value: target, target, reading, digits, frame: null, last: 0 };
     percentDrums.set(element, state);
     animate = false;
   }
   state.target = target;
-  state.reading.textContent = prefix + target + ' %';
+  state.reading.textContent = prefix + target + ' % chans';
   function paint(speed = 0) {
     state.digits.forEach(({cell, belt}, index) => {
       const place = 10 ** (2 - index);
@@ -567,26 +563,21 @@ function render() {
         '<span class="bubble" aria-hidden="true"><span class="changing-value"></span></span><input type="range" id="'+id+
         '" min="'+min+'" max="'+max+'" step="'+step+'" value="'+value+'"></div></div>';
     }
-    screen.innerHTML = title(stage === 7 ? 'Regler för preset' : 'Regler')+(stage === 7 ? '<p class="page-intro">'+escape(presetDraft.name)+'</p>' : '')+'<form>'+
-      '<fieldset class="settings-group"><legend>Snabbval</legend><div class="choice-row">'+
-      ruleShortcuts.map((preset, i) => '<button type="button" data-shortcut="'+i+'" aria-pressed="false">'+preset.name+'</button>').join('')+
-      '</div></fieldset>'+
+    screen.innerHTML = title(stage === 7 ? 'Regler för preset' : 'Regler')+(stage === 7 ? '<p class="page-intro">'+escape(presetDraft.name)+'</p>' : '')+'<form class="rules-form">'+
       '<div class="rule count-rule" role="group" aria-labelledby="count-label"><span id="count-label" class="rule-label">Antal Bluffare</span>'+
       '<input type="number" id="count" min="1" max="'+(names.length-1)+'" value="'+count+'" hidden>'+
       '<div class="counter rule-counter"><button type="button" id="count-less" aria-label="Minska antal bluffare">−</button>'+
       '<strong id="bluffer-count" role="status" aria-atomic="true"></strong>'+
       '<button type="button" id="count-more" aria-label="Öka antal bluffare">+</button></div></div>'+
 
-      field('special','Alla eller ingen bluffar',specialChance,0,100)+
       '<fieldset class="hint-setting"><legend class="rule-label">Bluffarens information</legend><div class="hint-options">'+
       [['none','Ingen ledtråd'],['category','Kategori'],['clue','Ledtråd']].map(([value, text]) =>
         '<label><input type="radio" name="hint-mode" value="'+value+'"'+(hintMode === value ? ' checked' : '')+'><span>'+text+'</span></label>'
-      ).join('')+'</div></fieldset>'+
+      ).join('')+'</div><button type="button" class="secondary-button category-link" id="choose-categories">Välj kategorier <span aria-hidden="true">→</span></button></fieldset>'+
       '<div class="settings-group timer-setting">'+field('duration','Diskussionstimer',discussionSeconds,0,600)+'<div class="choice-row timer-shortcuts">'+
       timerOptions.map(([seconds, text]) => '<button type="button" data-timer="'+seconds+'" aria-pressed="'+(seconds === discussionSeconds)+'">'+text+'</button>').join('')+
       '</div></div>'+
-      '<div class="settings-group"><span class="settings-heading">Kategorier</span>'+
-      '<button type="button" class="secondary-button category-link" id="choose-categories">Välj kategorier <span aria-hidden="true">→</span></button></div>'+
+      field('special','Alla eller ingen bluffar',specialChance,0,100)+
       (stage === 7 ? '<p class="setting-note" id="preset-status" role="status"></p>' : '')+
       '<button id="deal">'+(stage === 7 ? 'Spara preset' : 'Dela ut rollkort')+'</button></form>'+button('back',stage === 7 ? 'Tillbaka till presetet' : 'Tillbaka till spelarna');
     const form = screen.querySelector('form');
@@ -666,10 +657,6 @@ function render() {
       track.append(rulerWindow);
     }
     function refresh(animate = false, direct = false) {
-      const active = ruleShortcuts.findIndex(preset =>
-        Math.min(preset.count, names.length - 1) === form.elements.count.valueAsNumber &&
-        preset.special === form.elements.special.valueAsNumber && preset.hint === form.elements['hint-mode'].value);
-      form.querySelectorAll('[data-shortcut]').forEach((control, i) => control.setAttribute('aria-pressed', String(i === active)));
       for (const input of controls) {
         if (input.id === 'count') {
           changeNumber(document.querySelector('#bluffer-count'), input.valueAsNumber, { animate });
@@ -682,7 +669,7 @@ function render() {
         rule.classList.toggle('direct-input', !animate || direct);
         const time = input.id === 'duration';
         const seconds = input.valueAsNumber;
-        const text = time ? durationLabel(seconds) : input.value+' %';
+        const text = time ? durationLabel(seconds) : input.value+' % chans';
         paintRuler(input);
         const output = rule.querySelector('.bubble .changing-value');
         if (time) changeTime(output, seconds, animate);
@@ -808,16 +795,6 @@ function render() {
         const from = rulerPositions.get(input);
         stopRulers();
         glideRuler(input, Number(control.dataset.timer), from);
-      };
-    });
-    form.querySelectorAll('[data-shortcut]').forEach(control => {
-      control.onclick = () => {
-        const from = rulerPositions.get(form.elements.special);
-        stopRulers();
-        const preset = ruleShortcuts[Number(control.dataset.shortcut)];
-        form.elements.count.value = Math.min(preset.count, names.length - 1);
-        form.querySelector('input[name="hint-mode"][value="'+preset.hint+'"]').checked = true;
-        glideRuler(form.elements.special, preset.special, from);
       };
     });
     form.oninput = event => {
