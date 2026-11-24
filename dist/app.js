@@ -1,7 +1,9 @@
-import { words } from './words.js?v=97';
-import { createWordDeck } from './word-deck.js?v=97';
+import { words } from './words.js?v=98';
+import { createWordDeck } from './word-deck.js?v=98';
 
 const wordDeck = createWordDeck(words);
+const placeholderPair = ['Hemligt ord', 'Ledtråd', 'Kategori'];
+let usePlaceholders = false;
 
 const screen = document.querySelector('#screen');
 const installButton = document.querySelector('#install');
@@ -292,7 +294,7 @@ function setupRound() {
   }
   bluffers = new Set(order.slice(0,n));
   starter = Math.floor(Math.random()*names.length);
-  pair = wordDeck.draw();
+  pair = usePlaceholders ? placeholderPair : wordDeck.draw();
   turn = 0; seen = false; go(2);
 }
 function bindDrag(row, index, list) {
@@ -393,7 +395,8 @@ function render() {
   document.querySelector('footer').hidden = stage > 0;
   const title = text => '<h1 tabindex="-1">'+text+'</h1>';
   if (stage === 0) {
-    screen.innerHTML = title('Spelare')+'<div class="counter">'+button('less','−')+'<strong role="status" aria-atomic="true"><span id="player-count" class="changing-value">'+names.length+'</span> spelare</strong>'+button('more','+')+'</div><ol></ol>'+button('next','Till regler');
+    screen.innerHTML = title('Spelare')+'<div class="counter">'+button('less','−')+'<strong role="status" aria-atomic="true"><span id="player-count" class="changing-value">'+names.length+'</span> spelare</strong>'+button('more','+')+'</div><ol></ol>'+button('next','Till regler')+
+      '<button type="button" id="placeholders" aria-pressed="'+usePlaceholders+'">Placeholders (dev): '+(usePlaceholders ? 'på' : 'av')+'</button>';
     changeNumber(document.querySelector('#player-count'), names.length, { animate: false });
     const list = screen.querySelector('ol');
     names.forEach((name,i) => list.append(playerRow(name,i,list)));
@@ -403,6 +406,12 @@ function render() {
       b.disabled = delta>0 ? names.length>=20 : names.length<=3;
       b.onclick = () => changePlayers(delta, list);
     }
+    on('placeholders', () => {
+      usePlaceholders = !usePlaceholders;
+      const toggle = document.getElementById('placeholders');
+      toggle.setAttribute('aria-pressed', String(usePlaceholders));
+      toggle.textContent = 'Placeholders (dev): ' + (usePlaceholders ? 'på' : 'av');
+    });
     on('next',()=>go(1));
   } else if (stage === 1) {
     function field(id, text, value, min, max) {
