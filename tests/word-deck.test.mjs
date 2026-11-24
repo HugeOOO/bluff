@@ -12,9 +12,9 @@ function seededRandom(seed = 12345) {
 }
 const drawWords = (deck, count) => Array.from({ length: count }, () => deck.draw()[0]);
 
-test('400 unique Swedish words, each with a category and two distinct non-revealing hints', () => {
-  assert.equal(words.length, 400);
-  assert.equal(new Set(words.map(entry => entry.word.toLocaleLowerCase('sv'))).size, 400);
+test('1000 unique Swedish words, each with a category and two distinct non-revealing hints', () => {
+  assert.equal(words.length, 1000);
+  assert.equal(new Set(words.map(entry => entry.word.toLocaleLowerCase('sv'))).size, words.length);
   for (const entry of words) {
     assert.ok(entry.word.trim() && entry.category.trim());
     assert.equal(entry.hints.length, 2);
@@ -32,7 +32,7 @@ test('every cycle uses the whole bank once and avoids the last 40 words across b
     const deck = createWordDeck(words, { storage: memoryStorage(), random: seededRandom(seed) });
     const history = drawWords(deck, words.length * 3);
     for (let cycle = 0; cycle < 3; cycle++) {
-      assert.equal(new Set(history.slice(cycle * 400, (cycle + 1) * 400)).size, 400);
+      assert.equal(new Set(history.slice(cycle * words.length, (cycle + 1) * words.length)).size, words.length);
     }
     history.forEach((word, i) => assert.ok(!history.slice(Math.max(0, i - 40), i).includes(word)));
   }
@@ -41,12 +41,12 @@ test('every cycle uses the whole bank once and avoids the last 40 words across b
 test('reload resumes the same session without resetting its remaining words or hints', () => {
   const storage = memoryStorage();
   const deck = createWordDeck(words, { storage, random: seededRandom() });
-  const first = Array.from({ length: 173 }, () => deck.draw());
+  const first = Array.from({ length: Math.floor(words.length / 2) }, () => deck.draw());
   const reloaded = createWordDeck(words, { storage, random: seededRandom(42) });
-  const rest = Array.from({ length: 227 }, () => reloaded.draw());
-  assert.equal(new Set([...first, ...rest].map(pair => pair[0])).size, 400);
+  const rest = Array.from({ length: words.length - first.length }, () => reloaded.draw());
+  assert.equal(new Set([...first, ...rest].map(pair => pair[0])).size, words.length);
   const previousHints = new Map([...first, ...rest].map(pair => [pair[0], pair[1]]));
-  for (let i = 0; i < 400; i++) {
+  for (let i = 0; i < words.length; i++) {
     const [word, hint, category] = reloaded.draw();
     const entry = words.find(entry => entry.word === word);
     assert.ok(entry.hints.includes(hint));
@@ -59,13 +59,13 @@ test('a separate tab/storage gets an independent full deck', () => {
   const first = createWordDeck(words, { storage: memoryStorage(), random: seededRandom() });
   drawWords(first, 150);
   const other = createWordDeck(words, { storage: memoryStorage(), random: seededRandom() });
-  assert.equal(new Set(drawWords(other, 400)).size, 400);
+  assert.equal(new Set(drawWords(other, words.length)).size, words.length);
 });
 
 test('blocked or full storage never interrupts a round', () => {
   const storage = { getItem() { throw Error('blocked'); }, setItem() { throw Error('full'); } };
   const deck = createWordDeck(words, { storage, random: seededRandom() });
-  assert.equal(new Set(drawWords(deck, 400)).size, 400);
+  assert.equal(new Set(drawWords(deck, words.length)).size, words.length);
 });
 
 test('malformed, stale or duplicate stored decks are safely replaced', () => {
@@ -73,7 +73,7 @@ test('malformed, stale or duplicate stored decks are safely replaced', () => {
     JSON.stringify({ bank: JSON.stringify(words.map(e => [e.word, e.hints])), remaining: ['Pizza', 'Pizza'], recent: [] })]) {
     const storage = { getItem: () => value, setItem() {} };
     const deck = createWordDeck(words, { storage, random: seededRandom() });
-    assert.equal(new Set(drawWords(deck, 400)).size, 400);
+    assert.equal(new Set(drawWords(deck, words.length)).size, words.length);
   }
 });
 

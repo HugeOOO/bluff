@@ -423,7 +423,636 @@ Massage|Träningsvärk|Lugn musik
 Dröm|Dagbok|Ologisk handling
 Kö|Nummerlapp|Väntetid
 Hemlighet|Viskning|Dagbokslås
-Överraskning|Presentpapper|Hjärtklappning`
+Överraskning|Presentpapper|Hjärtklappning`,
+  'Däggdjur': `
+Kanin|Trollhatt|Påskägg
+Hamster|Ekorrhjul|Kindpåse
+Marsvin|Höbur|Försökslaboratorium
+Råtta|Avloppsrör|Ostfälla
+Mus|Datorbord|Litet hål
+Chinchilla|Pälsjacka|Sandbad
+Iller|Långsmal kropp|Husdjurshängmatta
+Åsna|Envishet|Packning
+Kamel|Fettreserv|Ökenkaravan
+Dromedar|Sanddyn|Fartgupp
+Noshörning|Pansarplåt|Tjurhorn
+Flodhäst|Gäspning|Afrikansk flod
+Gorilla|Brösttrumma|Människosläkting
+Schimpans|Verktygslåda|Djungelforskare
+Orangutang|Röd frisyr|Trädkoja
+Sengångare|Långsam hiss|Hängande vardag
+Koala|Eukalyptus|Sömnbehov
+Känguru|Studsmatta|Magficka
+Panda|Bamburör|Svartvit film
+Tvättbjörn|Ögonmask|Soptunnelock`,
+  'Hav och vatten': `
+Lax|Rosa färg|Motström
+Abborre|Randig tröja|Metspö
+Gädda|Vassa tänder|Vassrugge
+Torsk|Fiskpinne|Skäggtråd
+Sill|Julbord|Konservburk
+Makrill|Tomatsås|Randig rygg
+Tonfisk|Konservöppnare|Sushimeny
+Sjöhäst|Schackpjäs|Krökt hals
+Sjöstjärna|Julgranstopp|Havsbotten
+Krabba|Sidosteg|Nypa
+Hummer|Skaldjursfest|Nötknäppare
+Räka|Cocktailglas|Smörgåstårta
+Mussla|Gångjärn|Strandfynd
+Ostron|Pärlhalsband|Hårt skal
+Korall|Undervattensstad|Dyksemester
+Säl|Badboll|Klipphäll
+Valross|Mustasch|Elfenben
+Utter|Vattenrutschkana|Fiskmiddag
+Bäver|Timmerman|Översvämning
+Ål|Ormform|Slingrande rörelse`,
+  'Frukt och grönt': `
+Ananas|Taggig frisyr|Tropisk juice
+Mango|Stor kärna|Tropisk smoothie
+Kiwi|Fågelnamn|Grönt tvärsnitt
+Persika|Sammetsyta|Sommarfrukt
+Plommon|Torkad frukt|Trädgårdsträd
+Körsbär|Örhänge|Sten i mitten
+Vindruva|Vinkällare|Klase
+Melon|Vattenförråd|Sommarpicknick
+Granatäpple|Rubiner|Små frökammare
+Fikon|Småkärnor|Ostbricka
+Dadlar|Oas|Ramadan
+Russin|Skrynklig hud|Glöggkopp
+Tranbär|Röd juice|Myrmark
+Lingon|Skogspromenad|Köttbullstallrik
+Hjortron|Guldfärg|Myrmark
+Rabarber|Grimas|Pajform
+Rödbeta|Fingerfärg|Inlagd burk
+Blomkål|Vitt moln|Grönsaksland
+Purjolök|Kikare|Soppskål
+Selleri|Grön stjälk|Knaster`,
+  'Mat och måltider': `
+Ärtsoppa|Torsdagsmeny|Baljväxt
+Fiskpinne|Geometrisk form|Remouladsås
+Fiskgratäng|Potatismos|Ugnsvärme
+Kebab|Snurrande pelare|Nattmat
+Burrito|Sovsäck|Inpackad lunch
+Quesadilla|Smält ost|Halvmåne
+Paella|Stor stekpanna|Saffransfärg
+Couscous|Små korn|Nordafrika
+Hummus|Falafeltallrik|Kikärtor
+Guacamole|Grön röra|Tortillachips
+Pesto|Mortel|Grön pastasås
+Ratatouille|Tecknad råtta|Grönsaksgryta
+Chili con carne|Hetta|Bönburk
+Gulasch|Paprikapulver|Värmande gryta
+Schnitzel|Hammarslag|Frasig yta
+Kroppkaka|Potatisåker|Fyllt paket
+Pyttipanna|Restfest|Tärningsform
+Raggmunk|Rivjärn|Lingonburk
+Surströmming|Klädnypa|Svullen burk
+Smörgåstårta|Bygglager|Kall festmat`,
+  'Bakverk och efterrätter': `
+Prinsesstårta|Kungakrona|Grön kupol
+Morotskaka|Snögubbe|Vit glasyr
+Cheesecake|Ostbricka|Smulbotten
+Äppelpaj|Höstskörd|Vaniljsås
+Chokladboll|Rullning|Kokosflingor
+Muffins|Papperskjol|Bakpulver
+Croissant|Halvmåne|Fransk frukost
+Wienerbröd|Smörlager|Konditori
+Donut|Livboj|Glasyr
+Bagel|Hål i mitten|Frukostmacka
+Scones|Brittisk paus|Bakpulver
+Baguette|Svärdfäktning|Papperspåse
+Knäckebröd|Knaster|Hålkaka
+Skorpa|Doppning|Brödsmulor
+Polkagris|Randig käpp|Gränna
+Geléhallon|Fruktbuske|Mjukt godis
+Nougat|Nötknäppare|Chokladask
+Tryffel|Kakaopulver|Lyxkonfekt
+Sorbet|Fruktjuice|Frysfack
+Pannacotta|Dallrande yta|Gräddkanna`,
+  'Kryddor och tillbehör': `
+Smör|Gräddkanna|Smältpunkt
+Ost|Musfälla|Mjölkgård
+Yoghurt|Frukostskål|Bakteriekultur
+Grädde|Visp|Tårtdekoration
+Ägg|Maräng|Påskmålning
+Mjöl|Dammoln|Sädesfält
+Jäst|Ballongexperiment|Luftigt bröd
+Bakpulver|Vulkanexperiment|Ugnshöjd
+Kanel|Bark|Juldoft
+Kardemumma|Bageridoft|Kryddkvarn
+Saffran|Luciakrona|Gul färg
+Gurkmeja|Gul fläck|Kryddhylla
+Ingefära|Rotknöl|Vinterdryck
+Basilika|Pesto|Italiensk doft
+Oregano|Pizzakartong|Örtkruka
+Dill|Kräftskiva|Färskpotatis
+Persilja|Grön kvist|Kryddträdgård
+Rosmarin|Barrliknande blad|Örtkruka
+Timjan|Små blad|Kryddträdgård
+Mynta|Tuggummi|Tandkräm`,
+  'Småsaker hemma': `
+Fjärrkontroll|Soffkudde|Batterijakt
+Väckarklocka|Snooze|Måndagsångest
+Blomkruka|Fat|Jord under naglarna
+Galge|Axlar|Kemtvätt
+Klädnypa|Krokodilmun|Vårvind
+Tvättkorg|Försvunna strumpor|Veckotvätt
+Soptunna|Måsbesök|Sophämtning
+Återvinningspåse|Glasflaskor|Sortering
+Dörrmatta|Leriga skor|Välkomsthälsning
+Ringklocka|Oväntat besök|Hundskall
+Brevinkast|Reklamblad|Hallgolv
+Kuvert|Frimärke|Hemligt meddelande
+Frimärke|Saliv|Vykort
+Kalender|Väggspik|Födelsedagsminne
+Fotoalbum|Släktträff|Tidsresa
+Ram|Kantlinje|Familjeporträtt
+Ljus|Romantisk middag|Strömavbrott
+Tändsticka|Skogsbrand|Plån
+Tändare|Gnista|Gasbehållare
+Brandvarnare|Bränt bröd|Batteripip`,
+  'Badrum och hygien': `
+Handduk|Frotté|Blött hår
+Badkar|Russinfingrar|Skumbubblor
+Dusch|Konstgjort regn|Kakelfog
+Toalett|Avloppsrör|Låst dörr
+Handfat|Tandkrämsfläck|Vattenlås
+Toalettpapper|Pappersbruk|Tom rulle
+Tandborste|Igelkottsrygg|Morgonrutin
+Tandkräm|Pepparmynta|Skum i munnen
+Tandtråd|Sytråd|Mellanrum
+Schampo|Skumbad|Hårbotten
+Balsam|Tovutredning|Silkeskänsla
+Deodorant|Omklädningsrum|Svettlukt
+Parfym|Blomsteräng|Minnesspår
+Rakapparat|Gräsklippare|Skäggstubb
+Rakhyvel|Skridskoskena|Raklödder
+Nagelsax|Manikyr|Halvmåne
+Hårborste|Igelkott|Trassel
+Kam|Tandrad|Mittbena
+Plåster|Skavsår|Sårskorpa
+Förbandslåda|Rött kors|Utflyktsväska`,
+  'Klädesplagg': `
+Regnrock|Vattendroppar|Gul färg
+Väst|Ärmlöshet|Kostym
+Kavaj|Jobbintervju|Innerficka
+Kostym|Bröllopsgäst|Kemtvätt
+Frack|Pingvin|Nobelmiddag
+Pyjamas|Tandborstning|Sovmorgon
+Nattlinne|Godnattsaga|Sängvärme
+Badrock|Hotellfrukost|Frotté
+Baddräkt|Klorlukt|Simskola
+Bikini|Solränder|Strandväska
+Shorts|Sommarknän|Fotpall
+Leggings|Stretch|Gympapåse
+Overall|Sandlåda|Snöängel
+Förkläde|Mjölmoln|Klädskydd
+Skärmmössa|Solögon|Baseboll
+Öronmuffar|Vintervind|Hörlursform
+Hängslen|Axlar|Byxfall
+Bröstnäsduk|Kavajficka|Vikt tyg
+Manschettknapp|Skjortärm|Smyckesask
+Brosch|Säkerhetsnål|Kavajslag`,
+  'Verkstad och fästen': `
+Spik|Tumme|Väggtavla
+Skruv|Spiraltrappa|Platta möbler
+Mutter|Gängor|Cykelreparation
+Bricka|Tryckfördelning|Hål i mitten
+Gångjärn|Knarr|Öppningsrörelse
+Krok|Fisketur|Jackhängning
+Karbinhake|Klätterrep|Snabbkoppling
+Säkerhetsnål|Första förband|Trasiga kläder
+Gem|Pappershög|Böjd tråd
+Häftapparat|Kontorsbord|Metallklammer
+Hålslag|Konfetti|Pärm
+Sandpapper|Len yta|Träflisor
+Fil|Tandrad|Metallspån
+Hyvel|Lockiga spån|Slät bräda
+Mejsel|Stenhuggare|Hammarslag
+Skiftnyckel|Rörmokare|Justerbar käft
+Insexnyckel|Möbelkartong|Sexhörning
+Färgroller|Tapetbyte|Väggkulör
+Pensel|Hårstrån|Färgfläck
+Skottkärra|Balans|Jordlass`,
+  'Material': `
+Trä|Årsringar|Pappersbruk
+Papper|Skogsavverkning|Vikta flygplan
+Kartong|Flyttdag|Pappersinsamling
+Glas|Sandtag|Skärvor
+Metall|Skrothög|Klang
+Järn|Rostfläck|Magnet
+Stål|Besticklåda|Skyskrapa
+Koppar|Elledning|Grön ärg
+Aluminium|Läskburk|Ugnsfolie
+Guld|Prispall|Vigselring
+Silver|Andraplats|Smyckeskrin
+Plast|Oljefält|Återvinningssymbol
+Gummi|Bildäck|Sudd
+Läder|Skoputs|Sadel
+Ull|Fårhage|Vintervärme
+Siden|Kokong|Handelsväg
+Linne|Linblomma|Skrynkligt tyg
+Betong|Cementblandare|Motorvägsbro
+Tegel|Lertag|Skorsten
+Keramik|Lertag|Brännugn`,
+  'Byggnader och byggdelar': `
+Tak|Paraply|Regnvatten
+Golv|Fotsteg|Skurhink
+Vägg|Tapet|Insynsskydd
+Skorsten|Sotare|Röksignal
+Balkong|Blomlåda|Höjdrädsla
+Veranda|Gungstol|Kaffebricka
+Vindsvåning|Snedtak|Högt läge
+Källare|Potatisförråd|Marknivå
+Garage|Oljefläck|Verktygsbänk
+Carport|Paraply|Parkeringsplats
+Staket|Tomtgräns|Hundrastning
+Grind|Gångjärn|Trädgårdsentré
+Port|Stadsnyckel|Stor öppning
+Mur|Borgförsvar|Tegelbruk
+Borg|Riddarrustning|Vallgrav
+Skyskrapa|Hisskö|Höjdrädsla
+Stuga|Vedbod|Myggkväll
+Växthus|Kondens|Tomatodling
+Lekstuga|Låtsasfamilj|Minimöbler
+Igloo|Snöängel|Värmeisolering`,
+  'Arbetsplatser och ärenden': `
+Bageri|Jästdoft|Morgonskift
+Konditori|Glasmonter|Födelsedagsbeställning
+Restaurang|Dricks|Bordsbokning
+Kafé|Lattekonst|Pausmöte
+Pizzeria|Kartonghög|Ostdoft
+Matsal|Brickvagn|Lunchrast
+Butik|Köplust|Kvittorulle
+Kiosk|Småpengar|Lördagsgodis
+Varuhus|Rulltrappa|Shoppingpåse
+Marknad|Prutning|Torgstånd
+Bondgård|Gryningsarbete|Mjölkleverans
+Stall|Hölukt|Skottkärra
+Verkstad|Oljiga händer|Skyddsglasögon
+Fabrik|Löpande band|Skiftarbete
+Kontor|Kaffepaus|Skrivbordsstol
+Bank|Ränta|Spargris
+Postkontor|Frimärke|Paketvåg
+Frisörsalong|Avklippta hår|Väntestol
+Tvätteri|Klädhögar|Strykbord
+Återvinningscentral|Släpvagn|Sorteringsskylt`,
+  'Yrken': `
+Lärare|Rödpenna|Sommarlov
+Läkare|Väntrum|Receptblock
+Sjuksköterska|Nattskift|Blodtryck
+Tandläkare|Borrljud|Gapande
+Veterinär|Hundkoppel|Väntrum
+Brandman|Rökdykning|Hjälm
+Polis|Handbojor|Trafikdirigering
+Pilot|Höjdmätare|Cockpit
+Sjökapten|Brygga|Navigering
+Lokförare|Tidtabell|Förarhytt
+Busschaufför|Hållplats|Ratt
+Taxichaufför|Adress|Taxameter
+Apotekare|Receptblock|Pillerburk
+Bonde|Väderoro|Traktor
+Bagare|Mjölfläck|Gryningsarbete
+Kock|Vass kniv|Vit mössa
+Servitör|Brickbalans|Dricks
+Snickare|Träspån|Tumstock
+Elektriker|Proppskåp|Spänning
+Rörmokare|Vattenläcka|Skiftnyckel
+Målare|Färgstänk|Stege
+Murare|Tegelstapel|Vattenpass
+Arkitekt|Modellhus|Ritningsrulle
+Ingenjör|Problemlösning|Konstruktion
+Bibliotekarie|Bokvagn|Viskning
+Journalist|Anteckningsblock|Deadline
+Fotograf|Röda ögon|Bröllopsminne
+Författare|Tomt papper|Bokmässa
+Skådespelare|Lånad identitet|Replikminne
+Dansare|Taktkänsla|Scengolv
+Sångare|Stämband|Mikrofonstativ
+Musiker|Notställ|Repetition
+Dirigent|Trafikpolis|Taktpinne
+Domare|Visselpipa|Rättvisa
+Advokat|Lagbok|Försvarstal
+Forskare|Frågetecken|Experiment
+Astronaut|Tyngdlöshet|Frystorkad mat
+Arkeolog|Jordlager|Gammal kruka
+Brevbärare|Tidiga steg|Kuvert
+Sotare|Svarta händer|Takstege`,
+  'Skolsaker': `
+Blyertspenna|Diamant|Träspån
+Kulspetspenna|Bläckfläck|Namnteckning
+Suddgummi|Ångra|Smulor
+Linjal|Raka vägen|Centimeter
+Passare|Cirkel|Vass spets
+Gradskiva|Tårtbitar|Vinkelmått
+Pennvässare|Spånhög|Vass spets
+Pennfodral|Skolväska|Småsaksförvaring
+Skrivbok|Marginal|Rutnät
+Anteckningsblock|Minneshjälp|Rivkant
+Pärm|Ringar|Pappersordning
+Mapp|Sortering|Pappersficka
+Whiteboard|Suddbara tankar|Mötesrum
+Krittavla|Dammiga fingrar|Skolsal
+Krita|Regnskur|Asfaltskonst
+Projektor|Ljuskägla|Mörkt klassrum
+Jordglob|Fotboll|Världsresa
+Världskarta|Vikveck|Reseplan
+Skolväska|Tunga böcker|Axelband
+Gympapåse|Svettiga kläder|Omklädningsrum`,
+  'Lek och spel': `
+Lego|Fotplåga|Bygglov
+Docka|Låtsasförälder|Minikläder
+Nalle|Nattvakt|Tröst
+Gosedjur|Sängvakt|Mjukt sällskap
+Leksaksbil|Vardagsrumsrally|Bordsparkering
+Modelljärnväg|Miniatyrstad|Spårbyte
+Bilbana|Elektrisk fart|Hårnålskurva
+Jojo|Återkomst|Snörtrick
+Snurra|Balanspunkt|Rotation
+Kula|Glasblåsning|Sandgrop
+Tärning|Slump|Prickmönster
+Domino|Kedjereaktion|Vita prickar
+Memory|Parbildning|Minnesgympa
+Monopol|Hyresvärd|Fängelsebesök
+Fia med knuff|Hemväg|Utkastad gäst
+Yatzy|Sannolikhet|Protokoll
+Bingo|Nummerrop|Spelbricka
+Lotto|Vinstdröm|Sifferkombination
+Rubiks kub|Färgsortering|Vridning
+Korthus|Andningspaus|Rasrisk`,
+  'Utelek och rörelse': `
+Gunga|Pendel|Fjärilar i magen
+Rutschkana|Tyngdkraft|Fart i byxan
+Studsmatta|Fjäderkraft|Höjdhopp
+Sandlåda|Miniatyrslott|Hinkform
+Gungbräda|Hävstång|Balansbråk
+Karusell|Centrifugalkraft|Yrsel
+Hopprep|Boxningsträning|Fotarbete
+Rockring|Midjegymnastik|Planetbana
+Frisbee|Flygande tallrik|Parkgräs
+Drake|Vindstyrka|Snörtrassel
+Såpbubbla|Regnbågshinna|Utandning
+Vattenpistol|Sommarbråk|Blöta kläder
+Slangbella|Spänd kraft|Busstreck
+Pilbåge|Robin Hood|Fjäderkraft
+Kubb|Träklossar|Kungafall
+Krocket|Trädgårdsbågar|Träklubba
+Kurragömma|Blundande|Tystnad
+Kull|Jaktlek|Snabb vändning
+Brännboll|Skolgård|Rundtur
+Dragkamp|Lagarbete|Friktion`,
+  'Resor': `
+Pass|Gränskontroll|Dåligt porträtt
+Biljett|Kontrollant|Entré
+Resväska|Övervikt|Hotellgolv
+Handbagage|Hyllplats|Vätskepåse
+Bagageband|Återförening|Snurrande väntan
+Säkerhetskontroll|Avtagna skor|Röntgenbild
+Tull|Gräns|Deklaration
+Vägtull|Betalstation|Bilkö
+Rondell|Cirkelrörelse|Väjningsplikt
+Övergångsställe|Zebra|Väntande fot
+Trafikljus|Paprikafärger|Stopp
+Vägskylt|Metallstolpe|Navigering
+Parkering|Papperslapp|Backning
+Tankstation|Kaffestopp|Bränslepris
+Rastplats|Picknickbord|Stela ben
+Campingvagn|Rullande sovrum|Sommarkö
+Husbil|Semesterkök|Parkeringsplats
+Släpvagn|Flyttdag|Backningsproblem
+Lift|Höjdskillnad|Skidsemester
+Linbana|Hängande transport|Bergstopp`,
+  'Friluftsliv': `
+Tält|Daggdroppar|Knuten rygg
+Sovsäck|Kokong|Stjärnhimmel
+Liggunderlag|Kall mark|Luftmadrass
+Termos|Värmeisolering|Skidutflykt
+Stormkök|Bränsleflaska|Frystorkad middag
+Kåsa|Lägereld|Bärplockning
+Fältflaska|Törst|Vandringsled
+Vandringsstav|Extra ben|Balanshjälp
+Flytväst|Kork|Säkerhetssele
+Livboj|Donut|Räddningslina
+Ankare|Broms|Havsbotten
+Åra|Bäversvans|Muskelkraft
+Paddel|Vattenmotstånd|Bäversvans
+Segel|Vindfång|Lakan
+Fiskespö|Tålamod|Böjd pinne
+Håv|Fjärilsjakt|Nätpåse
+Kikare|Läktarplats|Fågelräkning
+Förstoringsglas|Detektiv|Solstråle
+Lupp|Frimärkssamling|Detaljgranskning
+Pannlampa|Fria händer|Mörkerlöpning`,
+  'Kroppen': `
+Hjärta|Pumpstation|Alla hjärtans dag
+Lunga|Blåsbälg|Syrebehov
+Hjärna|Kontrollrum|Valnötsform
+Mage|Kurrande|Fjärilar
+Tarm|Labyrint|Näringsupptag
+Lever|Reningsverk|Blodflöde
+Njure|Kaffefilter|Blodrening
+Skelett|Byggställning|Halloween
+Muskel|Motor|Styrketräning
+Hud|Skyddskläder|Solbränna
+Hår|Isolering|Frisörsax
+Nagel|Gitarrspel|Fingertopp
+Tand|Pärlrad|Karies
+Tunga|Smakprov|Räckutgest
+Öga|Kamera|Pupill
+Öra|Parabol|Konsert
+Näsa|Parfymprov|Nysning
+Hand|Verktygslåda|Fingeravtryck
+Fot|Måttenhet|Balans
+Knä|Gångjärn|Skrapsår`,
+  'Kroppens vardag': `
+Hicka|Rytmfel|Plötsligt ljud
+Gäspning|Sömnbrist|Smittsam gest
+Nysning|Pepparkvarn|Pollenprognos
+Hosta|Halstablett|Kall luft
+Snarkning|Nattkonsert|Störd granne
+Svett|Kylsystem|Träningspass
+Tår|Lökhackning|Sorg
+Saliv|Frimärke|Hundens mun
+Blod|Röd färg|Donation
+Puls|Trumslag|Handled
+Andning|Blåsbälg|Dykpaus
+Skratt|Magträning|Skämt
+Leende|Gruppfoto|Munvinkel
+Rodnad|Strålkastare|Pinsamt ögonblick
+Gåshud|Plockad fågel|Kall vind
+Fräknar|Stjärnhimmel|Prickmönster
+Rynka|Kartlinje|Årsringar
+Ärr|Gammalt äventyr|Hudminne
+Blåmärke|Färgskiftning|Bordskant
+Träningsvärk|Trappångest|Dagen efter`,
+  'Tid och rutiner': `
+Morgon|Tandborstning|Väckning
+Kväll|Låg sol|Godnattsaga
+Natt|Skiftarbete|Stjärnhimmel
+Gryning|Tuppsång|Första ljuset
+Skymning|Gatulampor|Lång skugga
+Vår|Pollenprognos|Fågelkvitter
+Sommar|Myggnät|Långa dagar
+Höst|Kratta|Skördekorg
+Vinter|Bilskrapa|Mörka morgnar
+Helg|Sovmorgon|Lördagsgodis
+Måndag|Väckarklocka|Ny arbetsvecka
+Fredag|Tacobord|Helgkänsla
+Lunch|Halvdagspaus|Brickvagn
+Frukost|Hotellbuffé|Tom mage
+Middag|Dukning|Kvällssamtal
+Mellanmål|Skolväska|Fruktpaus
+Fika|Kaffekopp|Arbetsrast
+Rast|Skolgård|Sträckta ben
+Läggdags|Tandborstning|Släckt lampa
+Deadline|Tidspress|Kalenderlarm`,
+  'Musik och scen': `
+Notblad|Flugprickar|Musikställ
+Metronom|Pendel|Taktkänsla
+Plektrum|Plastbit|Strängknäpp
+Stråke|Hästsvans|Friktion
+Stämgaffel|Vibration|Bestämd ton
+Kör|Gemensam andning|Många röster
+Orkester|Lagarbete|Notställ
+Konsert|Öronproppar|Biljettkö
+Festival|Leriga skor|Tältgranne
+Opera|Stämband|Orkesterdike
+Balett|Tåspetsar|Svan
+Musikal|Repliker|Dansnummer
+Karaoke|Textruta|Modprov
+Applåd|Handflator|Tacksamhet
+Ridå|Hemlig start|Sammet
+Scen|Strålkastare|Nervositet
+Kuliss|Låtsasvägg|Bakgrund
+Strålkastare|Ljuskon|Bilfront
+Discokula|Mosaik|Ljusprickar
+Biljettlucka|Köbildning|Kvällsplan`,
+  'Konst och skapande': `
+Staffli|Tre ben|Ateljé
+Palett|Färgblandning|Handhål
+Akvarell|Vattenpöl|Genomskinlig färg
+Oljefärg|Lång torktid|Ateljédoft
+Kolteckning|Grillglöd|Svarta fingrar
+Skiss|Första tanke|Lösa linjer
+Porträtt|Identitet|Modell
+Landskapsmålning|Utsikt|Horisont
+Skulptur|Tre dimensioner|Sockel
+Staty|Duva|Torg
+Mosaik|Pussel|Kakelbit
+Origami|Vikveck|Pappersfågel
+Broderi|Textilbild|Små stygn
+Stickning|Fårhage|Maskor
+Virkning|Garnnystan|Krok
+Vävning|Spindelnät|Trådkorsning
+Symaskin|Pedal|Raka sömmar
+Garn|Fårhage|Kattbus
+Nål|Höstack|Akupunktur
+Fingerborg|Minirustning|Sömnad`,
+  'Digital vardag': `
+Webbläsare|Fönsterflikar|Adressfält
+Sökmotor|Bibliotekarie|Frågetecken
+Webbsida|Adress|Klickväg
+Lösenord|Dörrnyckel|Minnesprov
+Användarnamn|Namnskylt|Inloggning
+E-post|Kuvert|Bilaga
+Spam|Överfull brevlåda|Skräpmapp
+Emoji|Ansiktsuttryck|Bildspråk
+Chatt|Samtalsbubbla|Tangentknatter
+Videosamtal|Webbkamera|Avståndsmöte
+Skärmdump|Bevisbild|Fryst ögonblick
+App|Fickverktyg|Startikon
+Uppdatering|Ny version|Omstart
+Nedladdning|Väntestapel|Filhämtning
+Säkerhetskopia|Reservnyckel|Minnesförlust
+Papperskorg|Ångrat klick|Städning
+Virus|Smitta|Skyddsprogram
+Brandvägg|Dörrvakt|Nättrafik
+Bluetooth|Trådlösa lurar|Parkoppling
+GPS|Satellit|Vilse`,
+  'Naturfenomen': `
+Eko|Papegoja|Bergvägg
+Tidvatten|Måne|Blottad havsbotten
+Havsvåg|Vindkraft|Gungande båt
+Jordbävning|Tallriksskrammel|Byggsäkerhet
+Lavin|Räddningshund|Snömassor
+Ras|Varningsskylt|Instabil mark
+Erosion|Sandpapper|Tidens spår
+Förvittring|Sprucken klippa|Frost
+Översvämning|Gummistövel|Källarpump
+Skogsbrand|Rökpelare|Grillförbud
+Årstid|Klädbyte|Jordaxel
+Soluppgång|Väckarklocka|Kompass
+Solnedgång|Vykort|Kompass
+Solförmörkelse|Himmelsk skugga|Skyddsglasögon
+Månförmörkelse|Jordskugga|Röd färg
+Tyngdkraft|Äppelfall|Badrumsvåg
+Magnetism|Kylskåpsdörr|Kompassnål
+Friktion|Varma handflator|Bromsspår
+Statisk elektricitet|Stående hår|Ballongtrick
+Ljud|Vibration|Öronproppar`,
+  'Landskap och mark': `
+Dal|Mellanrum|Bergssidor
+Kulle|Utsikt|Pulkatur
+Slätt|Horisont|Sädesfält
+Åker|Mjölpåse|Traktorspår
+Hage|Staket|Betande djur
+Hed|Ljung|Öppen mark
+Myr|Hjortron|Våta strumpor
+Dunge|Fågelbo|Skuggplats
+Ravin|Djup spricka|Vattenerosion
+Kanjon|Flodspår|Stup
+Halvö|Nästan avskild|Kustlinje
+Skärgård|Båtluffning|Klipphällar
+Vik|Lä|Badbrygga
+Udde|Spetsig kust|Utsiktspunkt
+Rev|Skeppsbrott|Grund
+Sanddyn|Vindskulptur|Ökenvandring
+Oas|Vattenpaus|Palmblad
+Bäck|Porlande|Gummistövel
+Damm|Grodrom|Vattenyta
+Källa|Grundvatten|Uppflöde`,
+  'Trädgård och odling': `
+Vattenkanna|Elefantsnabel|Duschmunstycke
+Trädgårdsslang|Ormform|Vattentryck
+Vattenspridare|Konstgjort regn|Sommarlek
+Gräsklippare|Frisör|Lördagsljud
+Häcksax|Frisyr|Grön vägg
+Sekatör|Knips|Rosbuske
+Odlingslåda|Minifält|Jord under naglarna
+Kompost|Matrester|Kretslopp
+Gödsel|Växtmat|Stalldoft
+Frö|Startpaket|Framtida skog
+Lökväxt|Underjordiskt förråd|Vårblomning
+Grodd|Första början|Fuktigt papper
+Rot|Sugrör|Trädfäste
+Stam|Pelare|Årsringar
+Gren|Fågelbänk|Familjeträd
+Blad|Solpanel|Höstfärg
+Blomma|Pollinatör|Bukett
+Pollen|Nysning|Bifötter
+Nektar|Saftglas|Biflygning
+Frukt|Fröpaket|Trädgårdsskörd`,
+  'Sagor och fantasifigurer': `
+Troll|Broavgift|Skogssaga
+Enhörning|Regnbågsfärg|Partyhatt
+Vampyr|Spegelproblem|Vitlöksrädsla
+Spöke|Lakan|Hemsökt hus
+Häxa|Sopborste|Kittel
+Sjöjungfru|Simfena|Sjömanssaga
+Jätte|Skyskrapa|Stora portioner
+Tomte|Grötfat|Julstrumpa
+Fe|Önskning|Trollstav
+Älva|Dimäng|Vingar
+Riddare|Plåtrustning|Hästhovar
+Prinsessa|Ärta|Kungakrona
+Pirat|Ögonlapp|Skattkarta
+Zombie|Stapplande steg|Skräckfilm
+Varulv|Fullmåne|Förvandling
+Mumie|Bandage|Pyramid
+Dvärg|Snövit|Gruvarbete
+Kung|Schackbräde|Tron
+Drottning|Bikupa|Schackbräde
+Magiker|Kortlek|Försvinnande kanin`
 };
 
 export const words = Object.entries(groups).flatMap(([category, rows]) =>
