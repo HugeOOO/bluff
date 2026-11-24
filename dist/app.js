@@ -1,11 +1,13 @@
-import { createPresetStore } from './presets.js?v=105';
-import { createDiscussionTimer } from './discussion-timer.js?v=105';
-import { words } from './words.js?v=105';
-import { createWordDeck } from './word-deck.js?v=105';
+import { createPresetStore } from './presets.js?v=106';
+import { createDiscussionTimer } from './discussion-timer.js?v=106';
+import { words } from './words.js?v=106';
+import { createWordDeck } from './word-deck.js?v=106';
 
 const wordDeck = createWordDeck(words);
 const wordPackages = [...new Set(words.map(entry => entry.category))];
 let selectedPackages = [...wordPackages];
+let categoryReturnStage = 1;
+let categoryDraft = [];
 // Accessing localStorage itself can throw in restricted browser contexts.
 let presetStorage;
 try { presetStorage = globalThis.localStorage; } catch {}
@@ -79,12 +81,12 @@ const button = (id, title) => '<button type="button" id="'+id+'">'+title+'</butt
 function on(id, fn) { document.getElementById(id).onclick = fn; }
 function bindPresets(beforeSave = () => {}) {
   const container = document.querySelector('#presets');
-  container.innerHTML = '<details class="preset-panel"><summary>Egna presets <span id="preset-total"></span></summary>'+
+  container.innerHTML = '<div class="preset-panel"><h2 class="settings-heading">Egna presets <span id="preset-total"></span></h2>'+
     '<p class="setting-note">Spara spelare, regler, timer och ordpaket på den här enheten.</p><div id="preset-list"></div>'+
     '<label class="preset-name-label" for="preset-name">Namn på preset</label>'+
     '<input id="preset-name" class="text-field" maxlength="40" placeholder="Till exempel Fredagsgänget" autocomplete="off">'+
     '<button type="button" class="secondary-button" id="preset-save">Spara eller uppdatera</button>'+
-    '<p class="setting-note" id="preset-status" role="status"></p></details>';
+    '<p class="setting-note" id="preset-status" role="status"></p></div>';
   const status = text => { container.querySelector('#preset-status').textContent = text; };
   function paint() {
     container.querySelector('#preset-total').textContent = '('+savedPresets.length+')';
@@ -102,7 +104,6 @@ function bindPresets(beforeSave = () => {}) {
         count = preset.count; specialChance = preset.special; hintMode = preset.hint;
         discussionSeconds = preset.timer; selectedPackages = [...preset.packages];
         go(stage);
-        const panel = document.querySelector('#presets details'); panel.open = true;
         document.querySelector('#preset-name').value = preset.name;
         document.querySelector('#preset-status').textContent = 'Läste in '+preset.name+'.';
       };
@@ -515,28 +516,10 @@ function render() {
       '<fieldset class="settings-group"><legend>Diskussionstimer</legend><div class="choice-row">'+
       timerOptions.map(([seconds, text]) => '<button type="button" data-timer="'+seconds+'" aria-pressed="'+(seconds === discussionSeconds)+'">'+text+'</button>').join('')+
       '</div><p class="setting-note">Starta när alla är redo. Tiden avslöjar aldrig rollerna automatiskt.</p></fieldset>'+
-      '<fieldset class="settings-group package-setting"><legend>Ordpaket</legend><div class="settings-toolbar"><p id="package-count" class="setting-note" role="status"></p><button type="button" class="secondary-button" id="packages-all">Alla</button></div>'+
-      '<details><summary>Välj ordpaket</summary><div class="package-list">'+
-      wordPackages.map((category, i) => '<label><input type="checkbox" name="package" value="'+i+'"'+(selectedPackages.includes(category) ? ' checked' : '')+'><span>'+escape(category)+'</span><small>'+words.filter(entry => entry.category === category).length+'</small></label>').join('')+
-      '</div></details><p id="package-error" class="setting-note" hidden>Välj minst ett ordpaket för att spela.</p></fieldset>'+
+      '<div class="settings-group"><span class="settings-heading">Kategorier</span><p class="setting-note">'+selectedPackages.length+' av '+wordPackages.length+' valda · '+words.filter(entry => selectedPackages.includes(entry.category)).length+' ord</p>'+
+      '<button type="button" class="secondary-button category-link" id="choose-categories">Välj kategorier <span aria-hidden="true">→</span></button></div>'+
       '<div id="presets"></div><button id="deal">Dela ut rollkort</button></form>'+button('back','Tillbaka till spelarna');
     const form = screen.querySelector('form');
-    function refreshPackages() {
-      selectedPackages = [...form.querySelectorAll('input[name="package"]:checked')].map(input => wordPackages[Number(input.value)]);
-      const totalWords = words.filter(entry => selectedPackages.includes(entry.category)).length;
-      form.querySelector('#package-count').textContent = selectedPackages.length+' av '+wordPackages.length+' paket · '+totalWords+' ord';
-      form.querySelector('#packages-all').setAttribute('aria-pressed', String(selectedPackages.length === wordPackages.length));
-      form.querySelector('#packages-all').setAttribute('aria-label', selectedPackages.length === wordPackages.length ? 'Avmarkera alla ordpaket' : 'Välj alla ordpaket');
-      form.querySelector('#deal').disabled = selectedPackages.length === 0;
-      form.querySelector('#package-error').hidden = selectedPackages.length > 0;
-    }
-    form.querySelectorAll('input[name="package"]').forEach(input => { input.onchange = refreshPackages; });
-    on('packages-all', () => {
-      const selectAll = selectedPackages.length !== wordPackages.length;
-      form.querySelectorAll('input[name="package"]').forEach(input => { input.checked = selectAll; });
-      refreshPackages();
-    });
-    refreshPackages();
     const controls = [...form.querySelectorAll('input[type=number], input[type=range]')];
     const percentageControls = controls.filter(input => input.id !== 'count');
     const rulerControllers = new Map();
@@ -731,9 +714,37 @@ function render() {
       };
     });
     form.oninput=event=>{ if(event.target.matches('input[type=range]')) haptic('tick'); stopRulers(); refresh(true, true); }; refresh();
+    on('choose-categories', () => {
+      save(); categoryReturnStage = stage; categoryDraft = [...selectedPackages]; go(5);
+    });
     bindPresets(save);
     form.onsubmit=e=>{ e.preventDefault(); save(); setupRound(); };
     on('back',()=>{ if(form.checkValidity()) save(); go(0); });
+  } else if (stage === 5) {
+    screen.innerHTML = title('Kategorier')+'<div class="settings-toolbar"><p id="category-count" class="setting-note" role="status"></p>'+button('categories-all','Alla')+'</div>'+
+      '<div class="selection-grid category-grid">'+wordPackages.map((category, i) =>
+        '<button type="button" class="category-tile" data-category="'+i+'" aria-pressed="false"><strong>'+escape(category)+'</strong><small>'+words.filter(entry => entry.category === category).length+' ord</small></button>').join('')+'</div>'+
+      '<p class="setting-note" id="category-error" hidden>Välj minst en kategori.</p>'+button('categories-done','Klart')+button('back','Tillbaka utan att ändra');
+    function paintCategories() {
+      screen.querySelectorAll('[data-category]').forEach(control => control.setAttribute('aria-pressed', String(categoryDraft.includes(wordPackages[Number(control.dataset.category)]))));
+      const all = categoryDraft.length === wordPackages.length;
+      document.querySelector('#categories-all').setAttribute('aria-pressed', String(all));
+      document.querySelector('#categories-all').setAttribute('aria-label', all ? 'Avmarkera alla kategorier' : 'Välj alla kategorier');
+      document.querySelector('#category-count').textContent = categoryDraft.length+' av '+wordPackages.length+' valda';
+      document.querySelector('#category-error').hidden = categoryDraft.length > 0;
+      document.querySelector('#categories-done').disabled = categoryDraft.length === 0;
+    }
+    screen.querySelectorAll('[data-category]').forEach(control => {
+      control.onclick = () => {
+        const category = wordPackages[Number(control.dataset.category)];
+        categoryDraft = categoryDraft.includes(category) ? categoryDraft.filter(item => item !== category) : [...categoryDraft, category];
+        paintCategories();
+      };
+    });
+    on('categories-all', () => { categoryDraft = categoryDraft.length === wordPackages.length ? [] : [...wordPackages]; paintCategories(); });
+    on('categories-done', () => { if (categoryDraft.length) { selectedPackages = [...categoryDraft]; go(categoryReturnStage); } });
+    on('back', () => go(categoryReturnStage));
+    paintCategories();
   } else if (stage === 2) {
     screen.innerHTML = title(escape(label(turn)))+'<button class="secret" id="hold" aria-label="Håll för att kika" aria-live="polite">'+secretMarkup()+'</button>'+button('next',turn===names.length-1?'Starta rundan':'Nästa spelare');
     const hold = document.querySelector('#hold'), next = document.querySelector('#next');
