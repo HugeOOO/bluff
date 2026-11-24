@@ -1,5 +1,6 @@
-import { words } from './words.js?v=101';
-import { createWordDeck } from './word-deck.js?v=101';
+import { createDiscussionTimer } from './discussion-timer.js?v=102';
+import { words } from './words.js?v=102';
+import { createWordDeck } from './word-deck.js?v=102';
 
 const wordDeck = createWordDeck(words);
 const placeholderPair = ['Hemligt ord', 'Ledtråd', 'Kategori'];
@@ -49,6 +50,8 @@ const names = ['', '', '', ''];
 const roleHistory = names.map(() => ({ debt: 0, last: 0 }));
 let balancedRounds = 0;
 let hintMode = 'clue';
+let discussionSeconds = 0;
+const timerOptions = [[0, 'Av'], [60, '1 min'], [120, '2 min'], [180, '3 min'], [300, '5 min']];
 const ruleShortcuts = [
   { name: 'Första gången', count: 1, special: 0, hint: 'clue', description: 'En bluffare med ledtråd. Inga överraskningar.' },
   { name: 'Klassiskt', count: 1, special: 0, hint: 'none', description: 'En bluffare utan ledtråd. Läs av varandra.' },
@@ -392,7 +395,10 @@ function secretMarkup() {
     '<span class="secret-face secret-front"><span class="secret-mark">Ditt rollkort</span><span class="secret-role"></span></span></span>';
 }
 let finishResultReveal = null;
+let stopDiscussionTimer = null;
 function render() {
+  stopDiscussionTimer?.();
+  stopDiscussionTimer = null;
   finishResultReveal?.();
   finishResultReveal = null;
   delete screen.dataset.entry;
@@ -439,6 +445,9 @@ function render() {
       [['none','Ingen ledtråd'],['category','Kategori'],['clue','Ledtråd']].map(([value, text]) =>
         '<label><input type="radio" name="hint-mode" value="'+value+'"'+(hintMode === value ? ' checked' : '')+'><span>'+text+'</span></label>'
       ).join('')+'</div></fieldset>'+
+      '<fieldset class="settings-group"><legend>Diskussionstimer</legend><div class="choice-row">'+
+      timerOptions.map(([seconds, text]) => '<button type="button" data-timer="'+seconds+'" aria-pressed="'+(seconds === discussionSeconds)+'">'+text+'</button>').join('')+
+      '</div><p class="setting-note">Starta när alla är redo. Tiden avslöjar aldrig rollerna automatiskt.</p></fieldset>'+
       '<button>Dela ut rollkort</button></form>'+button('back','Tillbaka till spelarna');
     const form = screen.querySelector('form');
     const controls = [...form.querySelectorAll('input[type=number], input[type=range]')];
@@ -618,6 +627,12 @@ function render() {
     });
     resizeRulers.observe(form);
     function save(){ stopRulers(); refresh(); [count,specialChance]=controls.map(input=>input.valueAsNumber); hintMode = form.elements['hint-mode'].value; }
+    form.querySelectorAll('[data-timer]').forEach(control => {
+      control.onclick = () => {
+        discussionSeconds = Number(control.dataset.timer);
+        form.querySelectorAll('[data-timer]').forEach(option => option.setAttribute('aria-pressed', String(option === control)));
+      };
+    });
     form.querySelectorAll('[data-shortcut]').forEach(control => {
       control.onclick = () => {
         stopRulers();
@@ -657,7 +672,29 @@ function render() {
     hold.onkeyup=e=>{ if([' ','Enter'].includes(e.key)){ e.preventDefault(); hide(); } };
     on('next',()=>{ hide(); advancePlayer(hold, next); });
   } else if (stage === 3) {
-    screen.innerHTML=title('<span class="starter-name">'+escape(label(starter))+'</span> <span class="starter-caption">börjar</span>')+button('next','Visa resultat');
+    screen.innerHTML=title('<span class="starter-name">'+escape(label(starter))+'</span> <span class="starter-caption">börjar</span>')+
+      (discussionSeconds ? '<div class="discussion-clock"><span class="clock-label">Diskussion</span><div id="timer-display" role="timer" aria-label="Återstående diskussionstid"></div><p id="timer-status" class="setting-note" role="status">Starta när alla är redo.</p><div class="choice-row">'+button('timer-toggle','Starta timer')+button('timer-reset','Börja om')+'</div></div>' : '')+
+      button('next','Visa resultat');
+    if (discussionSeconds) {
+      const clock = createDiscussionTimer(discussionSeconds);
+      let expired = false;
+      const paint = () => {
+        const state = clock.read();
+        document.querySelector('#timer-display').textContent = Math.floor(state.seconds / 60)+':'+String(state.seconds % 60).padStart(2, '0');
+        const toggle = document.querySelector('#timer-toggle');
+        toggle.textContent = state.running ? 'Pausa' : state.seconds === discussionSeconds ? 'Starta timer' : 'Fortsätt';
+        toggle.disabled = state.seconds === 0;
+        document.querySelector('#timer-reset').disabled = !state.running && state.seconds === discussionSeconds;
+        document.querySelector('#timer-status').textContent = state.seconds === 0 ? 'Tiden är slut. Dags att bestämma er!' : state.running ? 'Diskutera och hitta bluffaren.' : state.seconds === discussionSeconds ? 'Starta när alla är redo.' : 'Timern är pausad.';
+        if (state.seconds === 0 && !expired) { expired = true; haptic('drop'); }
+      };
+      on('timer-toggle', () => { clock.toggle(); paint(); });
+      on('timer-reset', () => { clock.reset(); expired = false; paint(); });
+      const interval = setInterval(paint, 250);
+      document.addEventListener('visibilitychange', paint);
+      stopDiscussionTimer = () => { clearInterval(interval); document.removeEventListener('visibilitychange', paint); };
+      paint();
+    }
     on('next',()=>go(4));
   } else {
     const bluffing = names.map((_, i) => i).filter(i => bluffers.has(i));
