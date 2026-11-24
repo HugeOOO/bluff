@@ -888,16 +888,39 @@ function advancePlayer(hold, next) {
   const animations = [exit, exitCard, entry, entryCard];
   const startTime = document.timeline.currentTime;
   animations.forEach(animation => { animation.startTime = startTime; });
-  const finishMotion = () => animations.forEach(animation => animation.finish());
-  reducedMotion.addEventListener('change', finishMotion, { once: true });
-  Promise.allSettled(animations.map(animation => animation.finished)).then(() => {
+  let landed = false;
+  function land() {
+    if (landed) return;
+    landed = true;
+    document.removeEventListener('pointerdown', pressIncoming, true);
     reducedMotion.removeEventListener('change', finishMotion);
     flight.remove();
     heading.classList.remove('name-transitioning');
     incoming.inert = false;
     incoming.style.removeProperty('visibility');
     animations.forEach(animation => animation.cancel());
-  });
+  }
+  function finishMotion() {
+    if (landed) return;
+    animations.forEach(animation => animation.finish());
+    land();
+  }
+  function pressIncoming(event) {
+    if (landed || !incoming.isConnected || !event.isPrimary || event.button !== 0) return;
+    const bounds = incomingVisual.getBoundingClientRect();
+    if (event.clientX < bounds.left || event.clientX > bounds.right ||
+        event.clientY < bounds.top || event.clientY > bounds.bottom) return;
+    // A press on the visible incoming card must become a real hold immediately.
+    // Land synchronously, then transfer this active pointer to the real button.
+    event.preventDefault();
+    event.stopPropagation();
+    finishMotion();
+    incoming.focus({ preventScroll: true });
+    incoming.onpointerdown(event);
+  }
+  document.addEventListener('pointerdown', pressIncoming, true);
+  reducedMotion.addEventListener('change', finishMotion, { once: true });
+  Promise.allSettled(animations.map(animation => animation.finished)).then(land);
 }
 function coverCard(){ document.querySelector('#hold')?.onblur(); }
 window.addEventListener('blur',coverCard);
