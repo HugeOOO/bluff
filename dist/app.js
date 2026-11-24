@@ -1,5 +1,5 @@
-import { words } from './words.js?v=94';
-import { createWordDeck } from './word-deck.js?v=94';
+import { words } from './words.js?v=95';
+import { createWordDeck } from './word-deck.js?v=95';
 
 const wordDeck = createWordDeck(words);
 
