@@ -98,15 +98,23 @@ form > button { margin-top: auto; }
 .starter-name { display: block; }
 .starter-caption { display: block; margin-top: 1rem; color: var(--muted); font: 500 1.1rem/1.5 system-ui, sans-serif; letter-spacing: 0; }
 .starter-morph-word { position: absolute; top: 0; left: 0; width: 100%; }
-.results { display: grid; gap: .75rem; margin: 2rem 0; padding: 0; }
-.result-card { margin: 0; padding: 1.4rem 1.5rem; background: var(--panel); border-radius: 1.5rem; }
-dt { color: var(--muted); font-size: .8rem; }
-dd { margin: .6rem 0 0; font-size: 1.25rem; font-weight: 500; line-height: 1.35; overflow-wrap: anywhere; }
-.result-card.word { background: #e9e6e0; color: #201e24; padding-block: 2rem; }
-.result-card.word dt { color: #625d69; }
-.result-card.word dd { font: 400 clamp(2rem,9vw,3rem)/1.15 Georgia, serif; letter-spacing: -.045em; }
-.result-card.roles dt { color: var(--accent); }
-.result-card.clue { background: transparent; padding-block: .75rem; }
+#screen[data-stage="4"] { gap: 1rem; }
+.result-stack { display: flex; flex-direction: column; align-items: center; gap: 1.75rem; margin-bottom: 1rem; }
+.result-word.secret { width: min(17rem,100%,32svh); margin: .5rem auto 0; }
+.result-word .secret-role { font-size: clamp(2rem,9vw,3.2rem); text-align: center; }
+.result-word .secret-emblem { color: #62546d; opacity: .5; }
+.result-roles { display: grid; gap: .9rem; width: 100%; padding: 0; margin: 0; list-style: none; }
+.result-role { position: relative; align-items: flex-start; gap: 1rem; padding: 1.15rem 1.25rem; border: 1px solid #ce829b38; border-radius: 1.2rem; background: linear-gradient(135deg,#39232e,#241c26); box-shadow: inset 0 1px #ffffff0d, 0 3px 0 #161219, 0 12px 24px #0003; }
+.result-avatar { flex: 0 0 42px; height: 50px; display: grid; place-items: center; border: 1px solid #e1a0b638; border-radius: .55rem; background: #e4a2b30e; color: #efb5c7; font: 500 1.1rem/1 Georgia, serif; letter-spacing: -.04em; }
+.result-role-copy { display: flex; flex-direction: column; min-width: 0; padding-top: .1rem; }
+.result-role-copy strong { color: #f1dde4; font: 500 1.35rem/1.2 Georgia, serif; letter-spacing: -.025em; overflow-wrap: anywhere; }
+.result-role-status { margin-top: .15rem; color: #d3a0b0; font-size: .8rem; }
+.result-hint { display: block; margin-top: .75rem; color: #b8a6b0; font-size: .8rem; line-height: 1.5; overflow-wrap: anywhere; }
+.result-hint b { color: #e1d3dc; font-weight: 500; }
+.result-role-special .result-role-copy { padding-top: .25rem; }
+.result-actions { display: grid; gap: .25rem; margin-top: auto; padding-top: .5rem; }
+.result-actions button { width: 100%; }
+.result-actions #back { margin-top: 0; }
 footer { margin-top: 1rem; text-align: center; }
 footer:has(#install[hidden]) { display: none; }
 #install { background: transparent; color: var(--muted); font-size: .8rem; font-weight: 450; }
@@ -129,9 +137,7 @@ footer:has(#install[hidden]) { display: none; }
   #screen[data-entry] { --entry-offset: .7rem; }
   #screen[data-entry="back"] { --entry-offset: -.7rem; }
   #screen[data-entry] > h1, #screen[data-entry] > form, #screen[data-entry] > .secret { animation: step-in 200ms var(--ease); }
-  #screen[data-stage="2"] > #next:not([hidden]), .result-card { animation: settle-in 200ms var(--ease) backwards; }
-  .result-card.roles { animation-delay: 45ms; }
-  .result-card.clue { animation-delay: 90ms; }
+  #screen[data-stage="2"] > #next:not([hidden]) { animation: settle-in 200ms var(--ease) backwards; }
   @keyframes step-in { from { translate: var(--entry-offset) 0; opacity: .72; } to { translate: 0 0; opacity: 1; } }
   @keyframes settle-in { from { translate: 0 .45rem; opacity: .65; } to { translate: 0 0; opacity: 1; } }
 }
