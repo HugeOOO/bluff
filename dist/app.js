@@ -1,7 +1,7 @@
-import { createPresetStore } from './presets.js?v=106';
-import { createDiscussionTimer } from './discussion-timer.js?v=106';
-import { words } from './words.js?v=106';
-import { createWordDeck } from './word-deck.js?v=106';
+import { createPresetStore } from './presets.js?v=107';
+import { createDiscussionTimer } from './discussion-timer.js?v=107';
+import { words } from './words.js?v=107';
+import { createWordDeck } from './word-deck.js?v=107';
 
 const wordDeck = createWordDeck(words);
 const wordPackages = [...new Set(words.map(entry => entry.category))];
@@ -61,7 +61,7 @@ const roleHistory = names.map(() => ({ debt: 0, last: 0 }));
 let balancedRounds = 0;
 let hintMode = 'clue';
 let discussionSeconds = 0;
-const timerOptions = [[0, 'Av'], [60, '1 min'], [120, '2 min'], [180, '3 min'], [300, '5 min']];
+const timerOptions = [[60, '1 min'], [180, '3 min'], [300, '5 min']];
 const ruleShortcuts = [
   { name: 'Första gången', count: 1, special: 0, hint: 'clue', description: 'En bluffare med ledtråd. Inga överraskningar.' },
   { name: 'Klassiskt', count: 1, special: 0, hint: 'none', description: 'En bluffare utan ledtråd. Läs av varandra.' },
@@ -185,7 +185,7 @@ function rollDigit(column) {
     if (column.cell.isConnected) rollDigit(column);
   };
 }
-function changeNumber(element, target, { animate = true, prefix = '', suffix = '', places = 2 } = {}) {
+function changeNumber(element, target, { animate = true, prefix = '', suffix = '', places = 2, zeroPad = false } = {}) {
   let state = numberValues.get(element);
   if (state?.target === target) return;
   if (!state) {
@@ -213,7 +213,7 @@ function changeNumber(element, target, { animate = true, prefix = '', suffix = '
   const direction = target >= state.target ? 1 : -1;
   state.target = target;
   state.reading.textContent = prefix + target + suffix;
-  const text = String(target).padStart(state.digits.length, ' ');
+  const text = String(target).padStart(state.digits.length, zeroPad ? '0' : ' ');
   state.digits.forEach((column, index) => {
     column.target = text[index];
     column.cell.classList.toggle('digit-empty', text[index] === ' ');
@@ -221,6 +221,16 @@ function changeNumber(element, target, { animate = true, prefix = '', suffix = '
     if (!animate || reducedMotion.matches) settleDigit(column, text[index]);
     else rollDigit(column);
   });
+}
+function changeTime(element, seconds, animate) {
+  if (!element.querySelector('.time-value')) {
+    element.innerHTML = '<span class="time-off">Av</span><span class="time-value" aria-hidden="true"><span class="time-minutes"></span><span>:</span><span class="time-seconds"></span></span><span class="sr-only time-reading"></span>';
+  }
+  element.querySelector('.time-off').hidden = seconds !== 0;
+  element.querySelector('.time-value').hidden = seconds === 0;
+  element.querySelector('.time-reading').textContent = seconds ? Math.floor(seconds / 60)+' minuter '+seconds % 60+' sekunder' : '';
+  changeNumber(element.querySelector('.time-minutes'), Math.floor(seconds / 60), { animate });
+  changeNumber(element.querySelector('.time-seconds'), seconds % 60, { animate, places: 2, zeroPad: true });
 }
 // Percentage drums move continuously, including through intermediate digits.
 const percentDrums = new WeakMap();
@@ -463,7 +473,10 @@ function secretMarkup() {
 }
 let finishResultReveal = null;
 let stopDiscussionTimer = null;
+let cleanupRules = null;
 function render() {
+  cleanupRules?.();
+  cleanupRules = null;
   stopDiscussionTimer?.();
   stopDiscussionTimer = null;
   finishResultReveal?.();
@@ -493,10 +506,10 @@ function render() {
     bindPresets();
     on('next',()=>go(1));
   } else if (stage === 1) {
-    function field(id, text, value, min, max) {
+    function field(id, text, value, min, max, step = 1) {
       return '<div class="rule"><label for="'+id+'">'+text+'</label><div class="slider">'+
         '<span class="bubble" aria-hidden="true"><span class="changing-value"></span></span><input type="range" id="'+id+
-        '" min="'+min+'" max="'+max+'" value="'+value+'"></div></div>';
+        '" min="'+min+'" max="'+max+'" step="'+step+'" value="'+value+'"></div></div>';
     }
     screen.innerHTML = title('Regler')+'<form>'+
       '<fieldset class="settings-group"><legend>Snabbval</legend><div class="choice-row">'+
@@ -513,22 +526,23 @@ function render() {
       [['none','Ingen ledtråd'],['category','Kategori'],['clue','Ledtråd']].map(([value, text]) =>
         '<label><input type="radio" name="hint-mode" value="'+value+'"'+(hintMode === value ? ' checked' : '')+'><span>'+text+'</span></label>'
       ).join('')+'</div></fieldset>'+
-      '<fieldset class="settings-group"><legend>Diskussionstimer</legend><div class="choice-row">'+
+      '<div class="settings-group timer-setting">'+field('duration','Diskussionstimer',discussionSeconds,0,600,30)+'<div class="choice-row timer-shortcuts">'+
       timerOptions.map(([seconds, text]) => '<button type="button" data-timer="'+seconds+'" aria-pressed="'+(seconds === discussionSeconds)+'">'+text+'</button>').join('')+
-      '</div><p class="setting-note">Starta när alla är redo. Tiden avslöjar aldrig rollerna automatiskt.</p></fieldset>'+
+      '</div><p class="setting-note">Dra för att välja tid. 0 stänger av timern.</p></div>'+
       '<div class="settings-group"><span class="settings-heading">Kategorier</span><p class="setting-note">'+selectedPackages.length+' av '+wordPackages.length+' valda · '+words.filter(entry => selectedPackages.includes(entry.category)).length+' ord</p>'+
       '<button type="button" class="secondary-button category-link" id="choose-categories">Välj kategorier <span aria-hidden="true">→</span></button></div>'+
       '<div id="presets"></div><button id="deal">Dela ut rollkort</button></form>'+button('back','Tillbaka till spelarna');
     const form = screen.querySelector('form');
     const controls = [...form.querySelectorAll('input[type=number], input[type=range]')];
-    const percentageControls = controls.filter(input => input.id !== 'count');
+    const rulerControls = controls.filter(input => input.type === 'range');
     const rulerControllers = new Map();
     function stopRulers() { rulerControllers.forEach(stop => stop()); }
     function paintRuler(input, value = input.valueAsNumber) {
       if (input.id === 'count') return;
       const rule = input.closest('.rule');
       const radius = Math.max(1, rule.querySelector('.slider').clientWidth / 2 - 8);
-      const step = input.id === 'count' ? 32 : 10;
+      const tickUnit = input.id === 'duration' ? 30 : 1;
+      const step = 10 / tickUnit;
       const min = Number(input.min), max = Number(input.max);
       for (const tick of rule.querySelectorAll('.ruler-ticks i')) {
         const n = Number(tick.dataset.value);
@@ -542,20 +556,21 @@ function render() {
       }
     }
 
-    for (const input of percentageControls) {
+    for (const input of rulerControls) {
       const rule = input.closest('.rule');
-      rule.classList.toggle('percent-rule', input.id !== 'count');
+      rule.classList.toggle('percent-rule', input.id === 'special');
       const track = rule.querySelector('.slider');
       const ticks = document.createElement('span');
       ticks.className = 'ruler-ticks';
       ticks.setAttribute('aria-hidden', 'true');
-      const step = input.id === 'count' ? 32 : 10;
+      const tickUnit = input.id === 'duration' ? 30 : 1;
+      const step = 10 / tickUnit;
       rule.style.setProperty('--tick-step', step + 'px');
-      for (let value = Number(input.min); value <= Number(input.max); value++) {
+      for (let value = Number(input.min); value <= Number(input.max); value += tickUnit) {
         const tick = document.createElement('i');
         tick.dataset.value = value;
-        if (input.id === 'count' || value % 10 === 0) tick.classList.add('major');
-        else if (value % 5 === 0) tick.classList.add('mid');
+        if (value % (input.id === 'duration' ? 60 : 10) === 0) tick.classList.add('major');
+        else if (value % (input.id === 'duration' ? 30 : 5) === 0) tick.classList.add('mid');
         ticks.append(tick);
       }
       const rulerWindow = document.createElement('span');
@@ -571,8 +586,7 @@ function render() {
       form.querySelectorAll('[data-shortcut]').forEach((control, i) => control.setAttribute('aria-pressed', String(i === active)));
       form.querySelector('#shortcut-note').textContent = active < 0 ? 'Egna regler. Justera precis som ni vill.' : ruleShortcuts[active].description;
       for (const input of controls) {
-        const percent = input.id !== 'count';
-        if (!percent) {
+        if (input.id === 'count') {
           changeNumber(document.querySelector('#bluffer-count'), input.valueAsNumber, { animate });
           document.querySelector('#count-less').disabled = input.valueAsNumber <= Number(input.min);
           document.querySelector('#count-more').disabled = input.valueAsNumber >= Number(input.max);
@@ -580,28 +594,32 @@ function render() {
         }
         const min = Number(input.min), max = Number(input.max);
         const rule = input.closest('.rule');
-        if (percent) rule.classList.toggle('direct-input', !animate || direct);
-        const text = input.value + (percent ? ' %' : '');
+        rule.classList.toggle('direct-input', !animate || direct);
+        const time = input.id === 'duration';
+        const seconds = input.valueAsNumber;
+        const text = time ? (seconds ? Math.floor(seconds / 60)+' minuter '+seconds % 60+' sekunder' : 'Av') : input.value+' %';
         paintRuler(input);
         const output = rule.querySelector('.bubble .changing-value');
-        if (percent) changePercent(output, input.valueAsNumber, animate);
-        else changeNumber(output, input.valueAsNumber);
+        if (time) changeTime(output, seconds, animate);
+        else changePercent(output, input.valueAsNumber, animate);
         input.setAttribute('aria-valuetext',text);
         input.disabled = min === max;
       }
+      form.querySelectorAll('[data-timer]').forEach(option => option.setAttribute('aria-pressed', String(Number(option.dataset.timer) === form.elements.duration.valueAsNumber)));
     }
-    for (const input of percentageControls) {
+    for (const input of rulerControls) {
       const rule = input.closest('.rule');
       const track = rule.querySelector('.slider');
-      const step = input.id === 'count' ? 32 : 10;
+      const tickUnit = input.id === 'duration' ? 30 : 1;
+      const step = 10 / tickUnit;
       let pointer = null, startX = 0, original = 0, position = 0;
       let velocity = 0, lastX = 0, lastTime = 0, frame = null;
       const clamp = value => Math.max(Number(input.min), Math.min(Number(input.max), value));
-      const snapPercent = value => Math.max(Math.ceil(Number(input.min) / 5) * 5,
-        Math.min(Math.floor(Number(input.max) / 5) * 5, Math.round(value / 5) * 5));
+      const snapUnit = input.id === 'duration' ? 30 : 5;
+      const snapToNotch = value => clamp(Math.round(value / snapUnit) * snapUnit);
       function stop() {
         if (frame !== null) {
-          input.value = snapPercent(position);
+          input.value = snapToNotch(position);
           position = input.valueAsNumber;
         }
         if (frame !== null) cancelAnimationFrame(frame);
@@ -614,7 +632,7 @@ function render() {
       function apply(value) {
         position = clamp(value);
         const previous = input.valueAsNumber;
-        input.value = Math.round(position);
+        input.value = Math.round(position / tickUnit) * tickUnit;
         if (input.valueAsNumber !== previous) haptic('tick');
         refresh(true, true);
         paintRuler(input, position);
@@ -624,7 +642,7 @@ function render() {
           const elapsed = Math.max(1, event.timeStamp - lastTime);
           const speed = (lastX - event.clientX) / (step * elapsed);
           velocity = .65 * speed + .35 * velocity;
-          const limit = input.id === 'count' ? .03 : .15;
+          const limit = .15 * tickUnit;
           velocity = Math.max(-limit, Math.min(limit, velocity));
           lastX = event.clientX;
           lastTime = event.timeStamp;
@@ -633,7 +651,7 @@ function render() {
       }
       function snap(momentum = false) {
         const previous = input.valueAsNumber;
-        input.value = momentum ? snapPercent(position) : clamp(Math.round(position));
+        input.value = momentum ? snapToNotch(position) : clamp(Math.round(position / tickUnit) * tickUnit);
         if (input.valueAsNumber !== previous) haptic('tick');
         position = input.valueAsNumber;
         frame = null;
@@ -696,11 +714,13 @@ function render() {
       controls.forEach(input => paintRuler(input));
     });
     resizeRulers.observe(form);
-    function save(){ stopRulers(); refresh(); [count,specialChance]=controls.map(input=>input.valueAsNumber); hintMode = form.elements['hint-mode'].value; }
+    cleanupRules = () => { stopRulers(); resizeRulers.disconnect(); };
+    function save(){ stopRulers(); refresh(); count = form.elements.count.valueAsNumber; specialChance = form.elements.special.valueAsNumber; discussionSeconds = form.elements.duration.valueAsNumber; hintMode = form.elements['hint-mode'].value; }
     form.querySelectorAll('[data-timer]').forEach(control => {
       control.onclick = () => {
-        discussionSeconds = Number(control.dataset.timer);
-        form.querySelectorAll('[data-timer]').forEach(option => option.setAttribute('aria-pressed', String(option === control)));
+        stopRulers();
+        form.elements.duration.value = Number(control.dataset.timer);
+        refresh(true);
       };
     });
     form.querySelectorAll('[data-shortcut]').forEach(control => {

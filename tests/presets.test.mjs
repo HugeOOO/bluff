@@ -37,3 +37,15 @@ test('unavailable storage and quota errors fail without throwing or claiming suc
   assert.equal(store.write([example]), false);
   assert.equal(createPresetStore(packages, null).write([example]), false);
 });
+
+test('presets accept every 30-second timer step and reject values outside the ruler', () => {
+  const storage = memoryStorage();
+  const store = createPresetStore(packages, storage);
+  for (let timer = 0; timer <= 600; timer += 30) {
+    assert.equal(store.write([{ ...example, timer }]), true);
+    assert.equal(store.read()[0].timer, timer);
+  }
+  for (const timer of [-30, 15, 45, 630, 90.5]) {
+    assert.equal(store.write([{ ...example, timer }]), false);
+  }
+});

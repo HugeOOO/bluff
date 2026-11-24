@@ -1,5 +1,4 @@
 const presetStorageKey = 'bluff-presets-v1';
-const timerLengths = [0, 60, 120, 180, 300];
 
 export function createPresetStore(packages, storage = globalThis.localStorage) {
   function normalize(preset) {
@@ -9,7 +8,7 @@ export function createPresetStore(packages, storage = globalThis.localStorage) {
         !preset.players.every(name => typeof name === 'string' && name.length <= 40) ||
         !Number.isInteger(preset.count) || preset.count < 1 || preset.count >= preset.players.length ||
         !Number.isInteger(preset.special) || preset.special < 0 || preset.special > 100 ||
-        !['none', 'category', 'clue'].includes(preset.hint) || !timerLengths.includes(preset.timer) ||
+        !['none', 'category', 'clue'].includes(preset.hint) || (!Number.isInteger(preset.timer) || preset.timer < 0 || preset.timer > 600 || preset.timer % 30 !== 0) ||
         !Array.isArray(preset.packages)) return null;
     const selected = [...new Set(preset.packages.filter(name => packages.includes(name)))];
     if (!selected.length) return null;
