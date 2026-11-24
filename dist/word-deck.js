@@ -5,7 +5,17 @@ const storageKey = 'bluff-word-history-v1';
 export function createWordDeck(entries, { storage, random = Math.random } = {}) {
   if (!entries.length) throw new Error('Ordlistan är tom.');
   const byWord = new Map(entries.map(entry => [entry.word, entry]));
-  const bank = JSON.stringify(entries.map(entry => [entry.word, entry.hints]));
+  // Editing clues must not reset which words have already been played.
+  const bank = JSON.stringify(entries.map(entry => entry.word));
+  function matchesBank(savedBank) {
+    if (savedBank === bank) return true;
+    try {
+      // Migrate the original signature, which included each word's old hints.
+      const previous = JSON.parse(savedBank);
+      return Array.isArray(previous) && previous.every(entry => Array.isArray(entry)) &&
+        JSON.stringify(previous.map(entry => entry[0])) === bank;
+    } catch { return false; }
+  }
   const recentLimit = Math.min(40, entries.length - 1);
   let remaining = [];
   let recent = [];
@@ -15,7 +25,7 @@ export function createWordDeck(entries, { storage, random = Math.random } = {}) 
     const saved = JSON.parse(storage?.getItem(storageKey) ?? 'null');
     const validWords = list => Array.isArray(list) &&
       list.every(word => byWord.has(word)) && new Set(list).size === list.length;
-    if (saved?.bank === bank && validWords(saved.remaining) &&
+    if (saved && matchesBank(saved.bank) && validWords(saved.remaining) &&
         validWords(saved.recent) && saved.recent.length <= recentLimit) {
       remaining = saved.remaining;
       recent = saved.recent;

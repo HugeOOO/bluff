@@ -70,7 +70,7 @@ test('blocked or full storage never interrupts a round', () => {
 
 test('malformed, stale or duplicate stored decks are safely replaced', () => {
   for (const value of ['{broken', 'null', JSON.stringify({ bank: 'old', remaining: [] }),
-    JSON.stringify({ bank: JSON.stringify(words.map(e => [e.word, e.hints])), remaining: ['Pizza', 'Pizza'], recent: [] })]) {
+    JSON.stringify({ bank: JSON.stringify(words.map(e => e.word)), remaining: ['Pizza', 'Pizza'], recent: [] })]) {
     const storage = { getItem: () => value, setItem() {} };
     const deck = createWordDeck(words, { storage, random: seededRandom() });
     assert.equal(new Set(drawWords(deck, words.length)).size, words.length);
@@ -107,4 +107,24 @@ test('default history survives 200 app restarts with five rounds per school day'
   }
   assert.equal(history.length, 1000);
   assert.equal(new Set(history).size, 1000);
+});
+
+
+test('hint revisions preserve played words and migrate the original stored signature', () => {
+  for (const legacy of [false, true]) {
+    const storage = memoryStorage();
+    const firstDeck = createWordDeck(words, { storage, random: seededRandom() });
+    const played = drawWords(firstDeck, 317);
+    if (legacy) {
+      const key = 'bluff-word-history-v1';
+      const saved = JSON.parse(storage.getItem(key));
+      saved.bank = JSON.stringify(words.map(entry => [entry.word, entry.hints]));
+      storage.setItem(key, JSON.stringify(saved));
+    }
+    const revised = words.map(entry => ({ ...entry, hints: ['Ny hint A', 'Ny hint B'] }));
+    const reopened = createWordDeck(revised, { storage, random: seededRandom(99) });
+    const remaining = Array.from({ length: words.length - played.length }, () => reopened.draw());
+    assert.equal(new Set([...played, ...remaining.map(pair => pair[0])]).size, words.length);
+    assert.ok(remaining.every(pair => pair[1].startsWith('Ny hint')));
+  }
 });
