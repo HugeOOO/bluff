@@ -55,7 +55,7 @@ test('reload resumes the same session without resetting its remaining words or h
   }
 });
 
-test('a separate tab/storage gets an independent full deck', () => {
+test('separate device storage gets an independent full deck', () => {
   const first = createWordDeck(words, { storage: memoryStorage(), random: seededRandom() });
   drawWords(first, 150);
   const other = createWordDeck(words, { storage: memoryStorage(), random: seededRandom() });
@@ -85,4 +85,26 @@ test('small decks refill safely and one-hint entries remain playable', () => {
   const single = createWordDeck(tiny.slice(0, 1), { storage: memoryStorage() });
   assert.deepEqual(single.draw(), ['Ett', 'A', 'Test']);
   assert.deepEqual(single.draw(), ['Ett', 'A', 'Test']);
+});
+
+
+test('default history survives 200 app restarts with five rounds per school day', t => {
+  const localDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  const sessionDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'sessionStorage');
+  t.after(() => {
+    if (localDescriptor) Object.defineProperty(globalThis, 'localStorage', localDescriptor);
+    else delete globalThis.localStorage;
+    if (sessionDescriptor) Object.defineProperty(globalThis, 'sessionStorage', sessionDescriptor);
+    else delete globalThis.sessionStorage;
+  });
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: memoryStorage() });
+  const history = [];
+  for (let day = 0; day < 200; day++) {
+    // Closing the previous app drops its memory and session storage, but keeps local storage.
+    Object.defineProperty(globalThis, 'sessionStorage', { configurable: true, value: memoryStorage() });
+    const reopened = createWordDeck(words, { random: seededRandom(day + 1) });
+    history.push(...drawWords(reopened, 5));
+  }
+  assert.equal(history.length, 1000);
+  assert.equal(new Set(history).size, 1000);
 });

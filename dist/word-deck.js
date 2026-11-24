@@ -1,6 +1,6 @@
-const storageKey = 'bluff-word-session-v1';
+const storageKey = 'bluff-word-history-v1';
 
-// A deck belongs to this tab, independently of players, rules and round screens.
+// History survives app restarts in this browser/device, independently of players and rules.
 // Storage is optional: private/restricted browsers still keep an in-memory deck.
 export function createWordDeck(entries, { storage, random = Math.random } = {}) {
   if (!entries.length) throw new Error('Ordlistan är tom.');
@@ -11,7 +11,7 @@ export function createWordDeck(entries, { storage, random = Math.random } = {}) 
   let recent = [];
   let hintChoices = {};
   try {
-    storage ??= globalThis.sessionStorage;
+    storage ??= globalThis.localStorage;
     const saved = JSON.parse(storage?.getItem(storageKey) ?? 'null');
     const validWords = list => Array.isArray(list) &&
       list.every(word => byWord.has(word)) && new Set(list).size === list.length;
@@ -54,7 +54,7 @@ export function createWordDeck(entries, { storage, random = Math.random } = {}) 
       if (!recentLimit) recent = [];
       try {
         storage?.setItem(storageKey, JSON.stringify({ bank, remaining, recent, hintChoices }));
-      } catch { /* A full/disabled session store must never stop a round. */ }
+      } catch { /* A full/disabled history store must never stop a round. */ }
       return [word, entry.hints[hintIndex], entry.category];
     }
   };
