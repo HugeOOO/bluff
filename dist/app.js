@@ -682,27 +682,39 @@ function showStarter(hold) {
     { transform: `translate3d(${dx}px,${dy - 2}px,0) scale(.995)`, offset: .9, easing: 'ease-out' },
     { transform: `translate3d(${dx}px,${dy}px,0) scale(1)`, offset: 1 }
   ], { duration: 850, fill: 'both' });
+  // Swap the words only in the middle of a fully blurred plateau. No readable
+  // letters crossfade or visibly change shape while the name travels down.
+  const blur = movingName.animate([
+    { filter: 'blur(0px)', offset: 0 },
+    { filter: 'blur(0px)', offset: .16 },
+    { filter: 'blur(24px)', offset: .38 },
+    { filter: 'blur(24px)', offset: .62 },
+    { filter: 'blur(0px)', offset: .9 },
+    { filter: 'blur(0px)', offset: 1 }
+  ], { duration: 850, fill: 'both' });
   const morphOut = oldWord.animate([
-    { opacity: 1, filter: 'blur(0px)', transform: 'scale(1)' },
-    { opacity: 0, filter: 'blur(3px)', transform: 'scale(.94)' }
-  ], { duration: 270, delay: 180, easing: motion.easing, fill: 'both' });
+    { opacity: 1, offset: 0 }, { opacity: 1, offset: .5 },
+    { opacity: 0, offset: .5 }, { opacity: 0, offset: 1 }
+  ], { duration: 850, fill: 'both' });
   const morphIn = newWord.animate([
-    { opacity: 0, filter: 'blur(3px)', transform: 'scale(1.06)' },
-    { opacity: 1, filter: 'blur(0px)', transform: 'scale(1)' }
-  ], { duration: 350, delay: 280, easing: motion.easing, fill: 'both' });
+    { opacity: 0, offset: 0 }, { opacity: 0, offset: .5 },
+    { opacity: 1, offset: .5 }, { opacity: 1, offset: 1 }
+  ], { duration: 850, fill: 'both' });
   // The outgoing card stays covered and clipped independently of the page.
   const distance = cardRect.right + cardRect.height * .4 + 48;
   const leave = card.animate(Array.from({ length: 31 }, (_, index) => {
     const t = index / 30;
     return { offset: t, transform: `translate3d(${-distance * t * t}px,${-180 * t + 220 * t * t}px,0) rotate(${-24 * t}deg)` };
-  }), { duration: 490, fill: 'both' });
+  }), { duration: 850, fill: 'both' });
   const explain = caption.animate([
     { opacity: 0, transform: 'translateY(8px)' },
     { opacity: 1, transform: 'translateY(0)' }
   ], { duration: 240, delay: 650, easing: motion.easing, fill: 'both' });
   const action = next.animate([{ opacity: 0 }, { opacity: 1 }],
     { duration: 220, delay: 680, fill: 'both' });
-  const animations = [move, morphOut, morphIn, leave, explain, action];
+  const animations = [move, blur, morphOut, morphIn, leave, explain, action];
+  const startTime = document.timeline.currentTime;
+  animations.forEach(animation => { animation.startTime = startTime; });
   const finish = () => animations.forEach(animation => animation.finish());
   reducedMotion.addEventListener('change', finish, { once: true });
   Promise.allSettled(animations.map(animation => animation.finished)).then(() => {
