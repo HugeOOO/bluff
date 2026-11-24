@@ -1,0 +1,88 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { words } from '../dist/words.js';
+import { createWordDeck } from '../dist/word-deck.js';
+
+function memoryStorage() {
+  const data = new Map();
+  return { getItem: key => data.get(key) ?? null, setItem: (key, value) => data.set(key, value) };
+}
+function seededRandom(seed = 12345) {
+  return () => ((seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 2 ** 32);
+}
+const drawWords = (deck, count) => Array.from({ length: count }, () => deck.draw()[0]);
+
+test('400 unique Swedish words, each with a category and two distinct non-revealing hints', () => {
+  assert.equal(words.length, 400);
+  assert.equal(new Set(words.map(entry => entry.word.toLocaleLowerCase('sv'))).size, 400);
+  for (const entry of words) {
+    assert.ok(entry.word.trim() && entry.category.trim());
+    assert.equal(entry.hints.length, 2);
+    assert.equal(new Set(entry.hints).size, 2);
+    for (const hint of entry.hints) {
+      assert.ok(hint.trim());
+      const tokens = hint.toLocaleLowerCase('sv').split(/[^\p{L}]+/u);
+      assert.ok(!tokens.includes(entry.word.toLocaleLowerCase('sv')), `${entry.word}: ${hint}`);
+    }
+  }
+});
+
+test('every cycle uses the whole bank once and avoids the last 40 words across boundaries', () => {
+  for (let seed = 1; seed <= 20; seed++) {
+    const deck = createWordDeck(words, { storage: memoryStorage(), random: seededRandom(seed) });
+    const history = drawWords(deck, words.length * 3);
+    for (let cycle = 0; cycle < 3; cycle++) {
+      assert.equal(new Set(history.slice(cycle * 400, (cycle + 1) * 400)).size, 400);
+    }
+    history.forEach((word, i) => assert.ok(!history.slice(Math.max(0, i - 40), i).includes(word)));
+  }
+});
+
+test('reload resumes the same session without resetting its remaining words or hints', () => {
+  const storage = memoryStorage();
+  const deck = createWordDeck(words, { storage, random: seededRandom() });
+  const first = Array.from({ length: 173 }, () => deck.draw());
+  const reloaded = createWordDeck(words, { storage, random: seededRandom(42) });
+  const rest = Array.from({ length: 227 }, () => reloaded.draw());
+  assert.equal(new Set([...first, ...rest].map(pair => pair[0])).size, 400);
+  const previousHints = new Map([...first, ...rest].map(pair => [pair[0], pair[1]]));
+  for (let i = 0; i < 400; i++) {
+    const [word, hint, category] = reloaded.draw();
+    const entry = words.find(entry => entry.word === word);
+    assert.ok(entry.hints.includes(hint));
+    assert.equal(category, entry.category);
+    assert.notEqual(hint, previousHints.get(word));
+  }
+});
+
+test('a separate tab/storage gets an independent full deck', () => {
+  const first = createWordDeck(words, { storage: memoryStorage(), random: seededRandom() });
+  drawWords(first, 150);
+  const other = createWordDeck(words, { storage: memoryStorage(), random: seededRandom() });
+  assert.equal(new Set(drawWords(other, 400)).size, 400);
+});
+
+test('blocked or full storage never interrupts a round', () => {
+  const storage = { getItem() { throw Error('blocked'); }, setItem() { throw Error('full'); } };
+  const deck = createWordDeck(words, { storage, random: seededRandom() });
+  assert.equal(new Set(drawWords(deck, 400)).size, 400);
+});
+
+test('malformed, stale or duplicate stored decks are safely replaced', () => {
+  for (const value of ['{broken', 'null', JSON.stringify({ bank: 'old', remaining: [] }),
+    JSON.stringify({ bank: JSON.stringify(words.map(e => [e.word, e.hints])), remaining: ['Pizza', 'Pizza'], recent: [] })]) {
+    const storage = { getItem: () => value, setItem() {} };
+    const deck = createWordDeck(words, { storage, random: seededRandom() });
+    assert.equal(new Set(drawWords(deck, 400)).size, 400);
+  }
+});
+
+test('small decks refill safely and one-hint entries remain playable', () => {
+  const tiny = [ { word: 'Ett', hints: ['A'], category: 'Test' }, { word: 'Två', hints: ['B'], category: 'Test' } ];
+  const deck = createWordDeck(tiny, { storage: memoryStorage(), random: seededRandom() });
+  const history = drawWords(deck, 20);
+  history.forEach((word, i) => { if (i) assert.notEqual(word, history[i - 1]); });
+  const single = createWordDeck(tiny.slice(0, 1), { storage: memoryStorage() });
+  assert.deepEqual(single.draw(), ['Ett', 'A', 'Test']);
+  assert.deepEqual(single.draw(), ['Ett', 'A', 'Test']);
+});

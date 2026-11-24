@@ -202,7 +202,7 @@ Lavendel|Linneskåp|Provence
 Bambu|Byggställning|Pandameny
 Ek|Vinfat|Skeppsvarv
 Björk|Bastu|Pollenprognos
-Gran|Vardagsrumsbarr|Julgransfot
+Gran|Vardagsrumsbarr|Glitterlåda
 Tall|Möbelvirke|Kåda
 Pil|Cricketträ|Flätad korg
 Palm|Vykort|Kokosvatten
@@ -334,7 +334,7 @@ Bro|Trollsaga|Tullavgift
 Tunnel|Radioavbrott|Bergsprängning
 Flygplats|Vätskepåse|Avsked
 Tågstation|Stor klocka|Återförening
-Hamnen|Måsar|Tullkontroll
+Hamn|Måsar|Tullkontroll
 Camping|Myggnät|Gemensam dusch
 Hotell|Liten schampoflaska|Frukostbuffé`,
   'Sport och fritid': `

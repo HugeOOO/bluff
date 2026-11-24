@@ -1,4 +1,7 @@
-import { words } from './words.js?v=93';
+import { words } from './words.js?v=94';
+import { createWordDeck } from './word-deck.js?v=94';
+
+const wordDeck = createWordDeck(words);
 
 const screen = document.querySelector('#screen');
 const installButton = document.querySelector('#install');
@@ -289,8 +292,7 @@ function setupRound() {
   }
   bluffers = new Set(order.slice(0,n));
   starter = Math.floor(Math.random()*names.length);
-  const entry = words[Math.floor(Math.random() * words.length)];
-  pair = [entry.word, entry.hints[Math.floor(Math.random() * entry.hints.length)], entry.category];
+  pair = wordDeck.draw();
   turn = 0; seen = false; go(2);
 }
 function bindDrag(row, index, list) {
