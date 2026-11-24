@@ -1,3 +1,5 @@
+import { words } from './words.js?v=93';
+
 const screen = document.querySelector('#screen');
 const installButton = document.querySelector('#install');
 // Capacitor injects its bridge in the APK; the PWA uses browser vibration when available.
@@ -37,15 +39,6 @@ document.addEventListener('click', event => {
 document.addEventListener('change', event => {
   if (event.target.matches('input[type=radio]')) haptic();
 });
-const pairs = [
-  ['Popcorn', 'Biokväll', 'Mat'], ['Kompass', 'Utflykt', 'Utrustning'],
-  ['Paraply', 'Väder', 'Föremål'], ['Fyr', 'Kusten', 'Byggnader'],
-  ['Piano', 'Konsert', 'Musikinstrument'], ['Kanelbulle', 'Fika', 'Bakverk'],
-  ['Hängmatta', 'Semester', 'Möbler'], ['Skridskor', 'Vinter', 'Sportutrustning']
-];
-// Keep development rounds predictable; turn this off to restore the word bank.
-const usePlaceholderContent = true;
-const placeholderPair = ['Hemligt ord', 'Ledtråd', 'Kategori'];
 const names = ['', '', '', ''];
 // History follows the player when the order changes; special rounds do not count.
 const roleHistory = names.map(() => ({ debt: 0, last: 0 }));
@@ -296,7 +289,8 @@ function setupRound() {
   }
   bluffers = new Set(order.slice(0,n));
   starter = Math.floor(Math.random()*names.length);
-  pair = usePlaceholderContent ? placeholderPair : pairs[Math.floor(Math.random()*pairs.length)];
+  const entry = words[Math.floor(Math.random() * words.length)];
+  pair = [entry.word, entry.hints[Math.floor(Math.random() * entry.hints.length)], entry.category];
   turn = 0; seen = false; go(2);
 }
 function bindDrag(row, index, list) {
