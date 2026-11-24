@@ -1,5 +1,5 @@
-import { words } from './words.js?v=99';
-import { createWordDeck } from './word-deck.js?v=99';
+import { words } from './words.js?v=100';
+import { createWordDeck } from './word-deck.js?v=100';
 
 const wordDeck = createWordDeck(words);
 const placeholderPair = ['Hemligt ord', 'Ledtråd', 'Kategori'];
