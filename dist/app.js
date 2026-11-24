@@ -1,8 +1,8 @@
-import { rulerSlidePosition } from './ruler-motion.js?v=115';
-import { createPresetStore } from './presets.js?v=115';
-import { createDiscussionTimer } from './discussion-timer.js?v=115';
-import { words } from './words.js?v=115';
-import { createWordDeck } from './word-deck.js?v=115';
+import { rulerSlidePosition } from './ruler-motion.js?v=116';
+import { createPresetStore } from './presets.js?v=116';
+import { createDiscussionTimer } from './discussion-timer.js?v=116';
+import { words } from './words.js?v=116';
+import { createWordDeck } from './word-deck.js?v=116';
 
 const wordDeck = createWordDeck(words);
 const wordPackages = [...new Set(words.map(entry => entry.category))];
@@ -865,7 +865,7 @@ function render() {
     on('next',()=>{ hide(); advancePlayer(hold, next); });
   } else if (stage === 3) {
     screen.innerHTML=title('<span class="starter-name">'+escape(label(starter))+'</span> <span class="starter-caption">börjar</span>')+
-      (discussionSeconds ? '<div class="discussion-clock"><span class="clock-label">Diskussion</span><div id="timer-display" role="timer" aria-label="Återstående diskussionstid"></div><p id="timer-status" class="setting-note" role="status">Starta när alla är redo.</p><div class="choice-row">'+button('timer-toggle','Starta timer')+button('timer-reset','Börja om')+'</div></div>' : '')+
+      (discussionSeconds ? '<div class="discussion-clock"><span class="clock-label">Diskussion</span><div id="timer-display" role="timer" aria-label="Återstående diskussionstid"></div><p id="timer-status" class="sr-only" role="status"></p><div class="choice-row">'+button('timer-toggle','Starta timer')+button('timer-reset','Börja om')+'</div></div>' : '')+
       button('next','Visa resultat');
     if (discussionSeconds) {
       const clock = createDiscussionTimer(discussionSeconds);
@@ -877,7 +877,9 @@ function render() {
         toggle.textContent = state.running ? 'Pausa' : state.seconds === discussionSeconds ? 'Starta timer' : 'Fortsätt';
         toggle.disabled = state.seconds === 0;
         document.querySelector('#timer-reset').disabled = !state.running && state.seconds === discussionSeconds;
-        document.querySelector('#timer-status').textContent = state.seconds === 0 ? 'Tiden är slut. Dags att bestämma er!' : state.running ? 'Diskutera och hitta bluffaren.' : state.seconds === discussionSeconds ? 'Starta när alla är redo.' : 'Timern är pausad.';
+        const message = state.seconds === 0 ? 'Tiden är slut.' : state.running ? 'Timern är igång.' : state.seconds === discussionSeconds ? '' : 'Timern är pausad.';
+        const status = document.querySelector('#timer-status');
+        if (status.textContent !== message) status.textContent = message;
         if (state.seconds === 0 && !expired) { expired = true; haptic('drop'); }
       };
       on('timer-toggle', () => { clock.toggle(); paint(); });

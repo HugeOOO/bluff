@@ -208,11 +208,12 @@ li input:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px;
 .setting-note { margin: .75rem 0 0; color: #b6b3be; font-size: .875rem; line-height: 1.5; }
 
 #screen[data-stage="3"]:has(.discussion-clock) { padding-top: clamp(1.5rem,6svh,4rem); gap: 2rem; }
-.discussion-clock { margin-block: auto; padding-block: 1.5rem; }
+.discussion-clock { width: 100%; align-self: center; margin-block: auto; padding-block: 1.5rem; }
 .clock-label { color: var(--muted); font-size: .875rem; }
 #timer-display { font: 400 clamp(4rem,20vw,6rem)/1.2 Georgia, serif; font-variant-numeric: tabular-nums; letter-spacing: -.04em; margin-top: .5rem; }
-.discussion-clock .choice-row { justify-content: center; }
-.discussion-clock .setting-note { min-height: 2.7em; }
+.discussion-clock .choice-row { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1rem; margin-top: 2rem; }
+.discussion-clock .choice-row button { width: 100%; min-height: 64px; padding: 1rem .75rem; font-size: 1rem; }
+.discussion-clock #timer-toggle { background: var(--accent); color: #1c1827; }
 
 .settings-toolbar { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-block: .75rem; }
 .settings-toolbar .setting-note { margin: 0; }

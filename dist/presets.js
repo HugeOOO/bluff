@@ -1,4 +1,4 @@
-import { mergeCategory } from './categories.js?v=115';
+import { mergeCategory } from './categories.js?v=116';
 
 const presetStorageKey = 'bluff-presets-v1';
 
