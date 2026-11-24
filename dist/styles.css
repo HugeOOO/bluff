@@ -265,7 +265,7 @@ li input:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px;
 .rules-form { margin-top: 2rem; gap: 1.75rem; }
 .rules-form > .settings-group, .rules-form > .hint-setting { margin: 0; }
 .rules-form .rule { padding: 0; }
-.rules-form .hint-options { margin-top: 1rem; }
+.rules-form .hint-options { margin-top: 0; }
 .rules-form .category-link { margin-top: 1.5rem; min-height: 52px; }
 .rules-form .slider { height: 56px; margin: 2.5rem 0 .5rem; }
 .rules-form .timer-shortcuts { margin-top: .5rem; gap: .75rem; }

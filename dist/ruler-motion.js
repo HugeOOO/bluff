@@ -1,15 +1,17 @@
-// Pass the target once, then settle back without oscillating or leaving the range.
+// Slow down just short of the selected mark, then make a small magnetic snap.
 export function rulerSlidePosition(from, target, progress, min, max) {
   const t = Math.max(0, Math.min(1, progress));
   if (t === 0) return from;
   if (t === 1 || from === target) return target;
   const distance = target - from;
-  const overshoot = Math.sign(distance) * Math.min(6, Math.abs(distance) * .06);
-  const turn = Math.max(min, Math.min(max, target + overshoot));
-  if (t < .72) {
-    const approach = t / .72;
-    return from + (turn - from) * (1 - (1 - approach) ** 3);
+  const near = target - Math.sign(distance) * Math.min(1.5, Math.abs(distance) * .05);
+  let value;
+  if (t < .82) {
+    const approach = t / .82;
+    value = from + (near - from) * (1 - (1 - approach) ** 3);
+  } else {
+    const snap = (t - .82) / .18;
+    value = near + (target - near) * (1 - (1 - snap) ** 3);
   }
-  const settle = (t - .72) / .28;
-  return turn + (target - turn) * settle * settle * (3 - 2 * settle);
+  return Math.max(min, Math.min(max, value));
 }

@@ -1,8 +1,8 @@
-import { rulerSlidePosition } from './ruler-motion.js?v=116';
-import { createPresetStore } from './presets.js?v=116';
-import { createDiscussionTimer } from './discussion-timer.js?v=116';
-import { words } from './words.js?v=116';
-import { createWordDeck } from './word-deck.js?v=116';
+import { rulerSlidePosition } from './ruler-motion.js?v=117';
+import { createPresetStore } from './presets.js?v=117';
+import { createDiscussionTimer } from './discussion-timer.js?v=117';
+import { words } from './words.js?v=117';
+import { createWordDeck } from './word-deck.js?v=117';
 
 const wordDeck = createWordDeck(words);
 const wordPackages = [...new Set(words.map(entry => entry.category))];
@@ -192,7 +192,7 @@ function rollDigit(column) {
     if (column.cell.isConnected) rollDigit(column);
   };
 }
-function changeNumber(element, target, { animate = true, prefix = '', suffix = '', places = 2, zeroPad = false } = {}) {
+function changeNumber(element, target, { animate = true, prefix = '', suffix = '', places = 2, zeroPad = false, direction: requestedDirection } = {}) {
   let state = numberValues.get(element);
   if (state?.target === target) return;
   if (!state) {
@@ -217,7 +217,7 @@ function changeNumber(element, target, { animate = true, prefix = '', suffix = '
     numberValues.set(element, state);
     animate = false;
   }
-  const direction = target >= state.target ? 1 : -1;
+  const direction = requestedDirection ?? (target >= state.target ? 1 : -1);
   state.target = target;
   state.reading.textContent = prefix + target + suffix;
   const text = String(target).padStart(state.digits.length, zeroPad ? '0' : ' ');
@@ -234,15 +234,15 @@ function durationLabel(seconds) {
   const minutes = Math.floor(seconds / 60);
   return [minutes ? minutes+' '+(minutes === 1 ? 'minut' : 'minuter') : '', seconds % 60 ? seconds % 60+' sekunder' : ''].filter(Boolean).join(' ');
 }
-function changeTime(element, seconds, animate) {
+function changeTime(element, seconds, animate, { showZero = false, direction } = {}) {
   if (!element.querySelector('.time-value')) {
     element.innerHTML = '<span class="time-off">Av</span><span class="time-value" aria-hidden="true"><span class="time-minutes"></span><span>:</span><span class="time-seconds"></span></span><span class="sr-only time-reading"></span>';
   }
-  element.querySelector('.time-off').hidden = seconds !== 0;
-  element.querySelector('.time-value').hidden = seconds === 0;
-  element.querySelector('.time-reading').textContent = seconds ? durationLabel(seconds) : '';
-  changeNumber(element.querySelector('.time-minutes'), Math.floor(seconds / 60), { animate });
-  changeNumber(element.querySelector('.time-seconds'), seconds % 60, { animate, places: 2, zeroPad: true });
+  element.querySelector('.time-off').hidden = showZero || seconds !== 0;
+  element.querySelector('.time-value').hidden = !showZero && seconds === 0;
+  element.querySelector('.time-reading').textContent = seconds ? durationLabel(seconds) : showZero ? '0 sekunder' : '';
+  changeNumber(element.querySelector('.time-minutes'), Math.floor(seconds / 60), { animate, direction });
+  changeNumber(element.querySelector('.time-seconds'), seconds % 60, { animate, places: 2, zeroPad: true, direction });
 }
 // Percentage drums move continuously, including through intermediate digits.
 const percentDrums = new WeakMap();
@@ -571,7 +571,7 @@ function render() {
       '<strong id="bluffer-count" role="status" aria-atomic="true"></strong>'+
       '<button type="button" id="count-more" aria-label="Öka antal bluffare">+</button></div></div>'+
 
-      '<fieldset class="hint-setting"><legend class="rule-label">Bluffarens information</legend><div class="hint-options">'+
+      '<fieldset class="hint-setting" aria-label="Bluffarens information"><div class="hint-options">'+
       [['none','Ingen ledtråd'],['category','Kategori'],['clue','Ledtråd']].map(([value, text]) =>
         '<label><input type="radio" name="hint-mode" value="'+value+'"'+(hintMode === value ? ' checked' : '')+'><span>'+text+'</span></label>'
       ).join('')+'</div><button type="button" class="secondary-button category-link" id="choose-categories">Välj kategorier <span aria-hidden="true">→</span></button></fieldset>'+
@@ -870,9 +870,13 @@ function render() {
     if (discussionSeconds) {
       const clock = createDiscussionTimer(discussionSeconds);
       let expired = false;
+      let previousSeconds = null;
       const paint = () => {
         const state = clock.read();
-        document.querySelector('#timer-display').textContent = Math.floor(state.seconds / 60)+':'+String(state.seconds % 60).padStart(2, '0');
+        // Animate individual ticks; reset and background catch-up display the actual time immediately.
+        const animate = previousSeconds !== null && previousSeconds - state.seconds === 1;
+        changeTime(document.querySelector('#timer-display'), state.seconds, animate, { showZero: true, direction: -1 });
+        previousSeconds = state.seconds;
         const toggle = document.querySelector('#timer-toggle');
         toggle.textContent = state.running ? 'Pausa' : state.seconds === discussionSeconds ? 'Starta timer' : 'Fortsätt';
         toggle.disabled = state.seconds === 0;
