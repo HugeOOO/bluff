@@ -642,7 +642,7 @@ function render() {
       ? '<span class="result-bluffer">'+escape(roleSummary)+'</span>'
       : bluffing.map(i => '<span class="result-bluffer">'+escape(label(i))+'</span>').join('');
     const wordLabel = pair[0]+'. '+hintText+'. Vänd för att se vilka som bluffade.';
-    screen.innerHTML = '<h1 class="sr-only" tabindex="-1">Resultat</h1><div class="result-stack">'+
+    screen.innerHTML = title('Resultat')+'<div class="result-stack">'+
       '<button type="button" id="result-flip" class="result-word secret open" aria-pressed="false" aria-label="'+escape(wordLabel)+'">'+
       '<span class="secret-object" aria-hidden="true">'+
       '<span class="secret-face secret-back result-bluff-face"><span class="result-face-content">'+

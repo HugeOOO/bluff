@@ -98,10 +98,10 @@ form > button { margin-top: auto; }
 .starter-name { display: block; }
 .starter-caption { display: block; margin-top: 1rem; color: var(--muted); font: 500 1.1rem/1.5 system-ui, sans-serif; letter-spacing: 0; }
 .starter-morph-word { position: absolute; top: 0; left: 0; width: 100%; }
-#screen[data-stage="4"] { gap: 1rem; }
+#screen[data-stage="4"] { gap: 1rem; text-align: center; }
 .shell:has(#screen[data-stage="4"]) { padding-top: max(1.5rem,env(safe-area-inset-top)); }
-.result-stack { display: flex; flex-direction: column; align-items: center; gap: 1.25rem; margin-bottom: .5rem; }
-.result-word.secret { width: min(20rem,100%,44svh); margin: .75rem auto 0; touch-action: pan-y; }
+.result-stack { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding-block: .5rem; }
+.result-word.secret { flex-shrink: 0; width: min(20rem,100%,44svh,max(10rem,calc((100svh - 15rem) * 5 / 7))); margin: 0 auto; touch-action: pan-y; }
 .result-word .secret-face { padding: 2.5rem 1.25rem 3.5rem; }
 .result-face-content { display: flex; flex-direction: column; align-items: center; gap: 1rem; width: 100%; max-height: 100%; }
 .result-word .secret-role { font-size: clamp(2rem,8vw,3rem); text-align: center; }
@@ -112,7 +112,7 @@ form > button { margin-top: auto; }
 .result-bluffers { display: flex; flex-direction: column; gap: .8rem; width: 100%; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; touch-action: pan-y; }
 .result-bluffer { display: block; color: #f1dde4; font: 500 clamp(1.5rem,6.5vw,2rem)/1.2 Georgia, serif; letter-spacing: -.025em; overflow-wrap: anywhere; }
 .result-card-status { flex-shrink: 0; color: #d3a0b0; font: 450 .875rem/1.5 system-ui, sans-serif; }
-.result-actions { display: grid; gap: .25rem; margin-top: auto; padding-top: .5rem; }
+.result-actions { display: grid; gap: .25rem; padding-top: .5rem; }
 .result-actions button { width: 100%; }
 .result-actions #back { min-height: 44px; margin-top: 0; padding-block: .6rem; }
 footer { margin-top: 1rem; text-align: center; }
