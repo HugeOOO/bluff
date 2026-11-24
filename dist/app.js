@@ -1,5 +1,42 @@
 const screen = document.querySelector('#screen');
 const installButton = document.querySelector('#install');
+// Capacitor injects its bridge in the APK; the PWA uses browser vibration when available.
+const nativeHaptics = window.Capacitor?.isNativePlatform?.()
+  ? window.Capacitor.Plugins?.Haptics : null;
+let lastHapticTick = -Infinity;
+function haptic(kind = 'press') {
+  const now = performance.now();
+  // Fast drags should feel like distinct ticks, without queuing vibrations.
+  if (kind === 'tick' && now - lastHapticTick < 65) return;
+  lastHapticTick = now;
+  const duration = kind === 'tick' ? 4 : kind === 'drop' ? 16 : 12;
+  const fallback = () => {
+    try { navigator.vibrate?.(duration); } catch {}
+  };
+  try {
+    if (nativeHaptics) {
+      // The stock LIGHT impact lasts 50 ms on Android. Short pulses feel subtler.
+      const feedback = nativeHaptics.vibrate({ duration });
+      Promise.resolve(feedback).catch(fallback);
+    } else fallback();
+  } catch { fallback(); }
+}
+// Delegation also covers buttons created when moving between screens.
+function pressedButton(event) {
+  const button = event.target.closest('button');
+  return button && !button.disabled && !button.closest('[inert]') &&
+    !button.matches('.grip, #hold');
+}
+document.addEventListener('pointerdown', event => {
+  if (event.isPrimary && event.button === 0 && pressedButton(event)) haptic();
+}, true);
+document.addEventListener('click', event => {
+  // Keyboard and assistive activation have no preceding pointer press.
+  if (event.detail === 0 && pressedButton(event)) haptic();
+}, true);
+document.addEventListener('change', event => {
+  if (event.target.matches('input[type=radio]')) haptic();
+});
 const pairs = [
   ['Popcorn', 'Biokväll', 'Mat'], ['Kompass', 'Utflykt', 'Utrustning'],
   ['Paraply', 'Väder', 'Föremål'], ['Fyr', 'Kusten', 'Byggnader'],
@@ -268,8 +305,10 @@ function bindDrag(row, index, list) {
     const delta = pointerY + window.scrollY - startY;
     const offset = Math.max(slots[0]-slots[index], Math.min(slots.at(-1)-slots[index], delta));
     const top = slots[index] + offset;
+    const previousDestination = destination;
     destination = 0;
     while (destination < slots.length-1 && top > (slots[destination]+slots[destination+1])/2) destination++;
+    if (destination !== previousDestination) haptic('tick');
     rows.forEach((item, i) => {
       let target = i;
       if (i > index && i <= destination) target--;
@@ -296,12 +335,16 @@ function bindDrag(row, index, list) {
   handle.onkeydown = event => {
     if (!['ArrowUp','ArrowDown'].includes(event.key)) return;
     event.preventDefault();
-    commit(Math.max(0, Math.min(names.length-1, index + (event.key === 'ArrowUp' ? -1 : 1))));
+    const next = Math.max(0, Math.min(names.length-1, index + (event.key === 'ArrowUp' ? -1 : 1)));
+    if (next !== index) haptic('tick');
+    commit(next);
   };
   handle.onpointerdown = event => {
     if (!event.isPrimary || event.button !== 0) return;
     if (list.classList.contains('sorting')) return;
     active = event.pointerId;
+    destination = index;
+    haptic();
     rows = [...list.children].filter(item => !item.classList.contains('leaving'));
     slots = rows.map(item => item.getBoundingClientRect().top + window.scrollY);
     pointerY = event.clientY;
@@ -320,6 +363,7 @@ function bindDrag(row, index, list) {
     cancelAnimationFrame(frame);
     const previousTop = row.getBoundingClientRect().top;
     const finalIndex = cancelled ? index : destination;
+    if (!cancelled && finalIndex !== index) haptic('drop');
     commit(finalIndex);
     const placed = screen.querySelectorAll('li')[finalIndex];
     if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -335,6 +379,11 @@ function bindDrag(row, index, list) {
     finish(false);
   };
   handle.onlostpointercapture = handle.onpointercancel = () => finish(true);
+}
+function secretMarkup() {
+  return '<span class="secret-object" aria-hidden="true">'+
+    '<span class="secret-face secret-back"><span class="secret-mark">Bluff</span><span class="secret-copy">Håll för att kika</span><span class="secret-emblem">◇</span></span>'+
+    '<span class="secret-face secret-front"><span class="secret-mark">Ditt rollkort</span><span class="secret-role"></span></span></span>';
 }
 function render() {
   delete screen.dataset.entry;
@@ -461,7 +510,9 @@ function render() {
       rulerControllers.set(input, stop);
       function apply(value) {
         position = clamp(value);
+        const previous = input.valueAsNumber;
         input.value = Math.round(position);
+        if (input.valueAsNumber !== previous) haptic('tick');
         refresh(true, true);
         paintRuler(input, position);
       }
@@ -478,7 +529,9 @@ function render() {
         apply(original - (event.clientX - startX) / step);
       }
       function snap(momentum = false) {
+        const previous = input.valueAsNumber;
         input.value = momentum ? snapPercent(position) : clamp(Math.round(position));
+        if (input.valueAsNumber !== previous) haptic('tick');
         position = input.valueAsNumber;
         frame = null;
         rule.classList.remove('tracking', 'coasting');
@@ -494,6 +547,7 @@ function render() {
         startX = lastX = event.clientX;
         lastTime = event.timeStamp;
         original = position = input.valueAsNumber;
+        haptic();
         track.setPointerCapture(pointer);
         rule.classList.add('tracking');
       };
@@ -502,7 +556,7 @@ function render() {
         if (event.pointerId !== pointer) return;
         const released = event.type === 'pointerup';
         if (released) move(event);
-        else apply(original);
+        else { input.value = original; position = original; refresh(true, true); }
         pointer = null;
         if (!released || reducedMotion.matches || event.timeStamp - lastTime > 100 || Math.abs(velocity) * step < .12) {
           snap();
@@ -540,21 +594,34 @@ function render() {
     });
     resizeRulers.observe(form);
     function save(){ stopRulers(); refresh(); [count,specialChance]=controls.map(input=>input.valueAsNumber); hintMode = form.elements['hint-mode'].value; }
-    form.oninput=()=>{ stopRulers(); refresh(true, true); }; refresh();
+    form.oninput=event=>{ if(event.target.matches('input[type=range]')) haptic('tick'); stopRulers(); refresh(true, true); }; refresh();
     form.onsubmit=e=>{ e.preventDefault(); save(); setupRound(); };
     on('back',()=>{ if(form.checkValidity()) save(); go(0); });
   } else if (stage === 2) {
-    screen.innerHTML = title(escape(label(turn)))+'<button class="secret" id="hold" aria-live="polite"><span class="secret-copy">Håll för att kika</span></button>'+button('next',turn===names.length-1?'Starta rundan':'Nästa spelare');
+    screen.innerHTML = title(escape(label(turn)))+'<button class="secret" id="hold" aria-label="Håll för att kika" aria-live="polite">'+secretMarkup()+'</button>'+button('next',turn===names.length-1?'Starta rundan':'Nästa spelare');
     const hold = document.querySelector('#hold'), next = document.querySelector('#next');
     next.hidden=!seen;
-    function reveal(){ hold.classList.add('open'); hold.classList.toggle('bluff',bluffers.has(turn)); changeText(hold.querySelector('.secret-copy'), roleText(turn)); seen=true; next.hidden=true; }
-    function hide(){ hold.classList.remove('open','bluff'); changeText(hold.querySelector('.secret-copy'), 'Håll för att kika'); next.hidden=!seen; }
+    function reveal(){
+      if(!hold.classList.contains('open')) haptic();
+      hold.querySelector('.secret-role').textContent = roleText(turn);
+      hold.setAttribute('aria-label', roleText(turn));
+      hold.classList.toggle('bluff',bluffers.has(turn));
+      hold.classList.add('open');
+      seen=true; next.hidden=true;
+    }
+    function hide(){
+      // Clear the role immediately, including when interrupted mid-flip.
+      hold.querySelector('.secret-role').textContent = '';
+      hold.setAttribute('aria-label', 'Håll för att kika');
+      hold.classList.remove('open','bluff');
+      next.hidden=!seen;
+    }
     hold.onpointerdown=e=>{ if(e.isPrimary && e.button===0){ hold.setPointerCapture(e.pointerId); reveal(); } };
     hold.onpointerup=hold.onpointercancel=hold.onlostpointercapture=hold.onblur=hide;
     hold.oncontextmenu=e=>e.preventDefault();
     hold.onkeydown=e=>{ if([' ','Enter'].includes(e.key)){ e.preventDefault(); if(!e.repeat) reveal(); } };
     hold.onkeyup=e=>{ if([' ','Enter'].includes(e.key)){ e.preventDefault(); hide(); } };
-    on('next',()=>{ seen=false; turn++; go(turn===names.length?3:2); });
+    on('next',()=>{ hide(); advancePlayer(hold, next); });
   } else if (stage === 3) {
     screen.innerHTML=title(escape(label(starter))+' börjar')+button('next','Visa resultat');
     on('next',()=>go(4));
@@ -569,6 +636,108 @@ function render() {
       '</dl>'+button('again','Spela igen')+button('back','Ändra spelare och regler');
     on('again',setupRound); on('back',()=>go(0));
   }
+}
+function advancePlayer(hold, next) {
+  if (next.disabled || !seen) return;
+  next.disabled = true;
+  seen = false;
+  turn++;
+  if (turn === names.length || reducedMotion.matches) {
+    go(turn === names.length ? 3 : 2);
+    return;
+  }
+
+  const rect = hold.getBoundingClientRect();
+  const previousHeading = screen.querySelector('h1');
+  const headingRect = previousHeading.getBoundingClientRect();
+  const outgoingHeading = previousHeading.cloneNode(true);
+  // Only a covered card is copied: no role text can survive in the flight layer.
+  const flight = document.createElement('div');
+  flight.className = 'card-flight';
+  flight.inert = true;
+  flight.setAttribute('aria-hidden', 'true');
+  const outgoing = document.createElement('div');
+  outgoing.className = 'secret secret-flight-card';
+  outgoing.innerHTML = secretMarkup();
+  Object.assign(outgoing.style, {
+    left: rect.left + 'px', top: rect.top + 'px',
+    width: rect.width + 'px', height: rect.height + 'px'
+  });
+  flight.append(outgoing);
+  document.body.append(flight);
+  go(2);
+  // The card has its own trajectory; suppress the ordinary screen-entry nudge.
+  delete screen.dataset.entry;
+  const heading = screen.querySelector('h1');
+  const incomingHeading = heading.cloneNode(true);
+  for (const [visual, bounds] of [[outgoingHeading, headingRect], [incomingHeading, heading.getBoundingClientRect()]]) {
+    visual.removeAttribute('tabindex');
+    visual.classList.add('name-flight');
+    Object.assign(visual.style, {
+      left: bounds.left + 'px', top: bounds.top + 'px', width: bounds.width + 'px'
+    });
+    flight.append(visual);
+  }
+  // Keep the real heading available to assistive technology while its visual
+  // copies move in the same clipped layer as the cards.
+  heading.classList.add('name-transitioning');
+  const nameExit = outgoingHeading.animate([
+    { transform: 'translate3d(0,0,0)', opacity: 1 },
+    { transform: 'translate3d(-32px,-3px,0)', opacity: 0 }
+  ], { duration: 210, easing: 'cubic-bezier(.4,0,1,1)', fill: 'both' });
+  const nameEntry = incomingHeading.animate([
+    { transform: 'translate3d(38px,3px,0)', opacity: 0, offset: 0 },
+    { transform: 'translate3d(-2px,0,0)', opacity: 1, offset: .8 },
+    { transform: 'translate3d(0,0,0)', opacity: 1, offset: 1 }
+  ], { duration: 440, delay: 180, easing: motion.easing, fill: 'both' });
+  const incoming = document.querySelector('#hold');
+  incoming.inert = true;
+  // Animate both visual cards inside the fixed, clipped layer. A transformed
+  // card in normal flow can extend the document and pan the viewport sideways.
+  const incomingRect = incoming.getBoundingClientRect();
+  const incomingVisual = outgoing.cloneNode(true);
+  Object.assign(incomingVisual.style, {
+    left: incomingRect.left + 'px', top: incomingRect.top + 'px',
+    width: incomingRect.width + 'px', height: incomingRect.height + 'px'
+  });
+  flight.append(incomingVisual);
+  incoming.style.visibility = 'hidden';
+  const distance = Math.max(rect.right, innerWidth - rect.left) + rect.height * .4 + 48;
+  const transform = (x, y, angle) => `translate3d(${x}px, ${y}px, 0) rotate(${angle}deg)`;
+  const exitFrames = Array.from({ length: 41 }, (_, index) => {
+    const t = index / 40;
+    if (t < .16) {
+      const windup = Math.sin(t / .16 * Math.PI / 2);
+      return { offset: t, transform: transform(12 * windup, 3 * windup, 2 * windup) };
+    }
+    const throwTime = (t - .16) / .84;
+    return { offset: t, transform: transform(12 - (distance + 12) * throwTime ** 2,
+      3 - 300 * throwTime + 351 * throwTime ** 2, 2 - 28 * throwTime) };
+  });
+  const exit = outgoing.animate(exitFrames, { duration: 460, fill: 'both', easing: 'linear' });
+  // Sample an underdamped spring, with a shallow arc tied to its travel.
+  // Velocity carries past the resting point once, then dissipates naturally.
+  const frames = Array.from({ length: 61 }, (_, index) => {
+    const t = index / 60;
+    const seconds = t * .78;
+    const remaining = index === 60 ? 0 : Math.exp(-11.7 * seconds) *
+      (Math.cos(9.39 * seconds) + 11.7 / 9.39 * Math.sin(9.39 * seconds));
+    const travel = Math.max(0, Math.min(1, 1 - remaining));
+    return { offset: t, transform: transform(distance * remaining,
+      42 * remaining - 76 * Math.sin(Math.PI * travel), 16 * remaining) };
+  });
+  const entry = incomingVisual.animate(frames, { duration: 780, delay: 105, fill: 'both', easing: 'linear' });
+  const animations = [exit, entry, nameExit, nameEntry];
+  const finishMotion = () => animations.forEach(animation => animation.finish());
+  reducedMotion.addEventListener('change', finishMotion, { once: true });
+  Promise.allSettled(animations.map(animation => animation.finished)).then(() => {
+    reducedMotion.removeEventListener('change', finishMotion);
+    flight.remove();
+    heading.classList.remove('name-transitioning');
+    incoming.inert = false;
+    incoming.style.removeProperty('visibility');
+    animations.forEach(animation => animation.cancel());
+  });
 }
 function coverCard(){ document.querySelector('#hold')?.onblur(); }
 window.addEventListener('blur',coverCard);
@@ -593,7 +762,8 @@ window.addEventListener('appinstalled', () => {
   installButton.hidden = true;
 });
 
-if ('serviceWorker' in navigator) {
+// Native builds bundle their own assets; a service worker could retain an older APK's files.
+if ('serviceWorker' in navigator && !window.Capacitor?.isNativePlatform?.()) {
   navigator.serviceWorker.register('./sw.js').catch(error => {
     console.warn('Offlineläget kunde inte startas', error);
   });
