@@ -223,3 +223,17 @@ li input:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px;
 .package-list input { flex-shrink: 0; width: 20px; height: 20px; accent-color: var(--accent); }
 .package-list span { flex: 1; overflow-wrap: anywhere; }
 .package-list small { color: var(--muted); font-variant-numeric: tabular-nums; padding-right: .5rem; }
+
+#presets { margin-bottom: 1.5rem; }
+.preset-panel { border-top: 1px solid var(--track); border-bottom: 1px solid var(--track); }
+.preset-panel > summary { min-height: 52px; padding-block: .85rem; color: var(--accent); cursor: pointer; font-size: .9rem; }
+#preset-total { color: var(--muted); }
+.preset-row { display: flex; align-items: center; gap: .5rem; border-bottom: 1px solid var(--track); padding-block: .5rem; }
+.preset-load { flex: 1; min-width: 0; padding: .6rem .25rem; text-align: left; background: transparent; color: inherit; border-radius: .5rem; }
+.preset-load strong { display: block; font-size: 1rem; font-weight: 550; overflow-wrap: anywhere; }
+.preset-load small { display: block; color: var(--muted); font-size: .8rem; font-weight: 400; margin-top: .2rem; }
+.preset-delete { flex-shrink: 0; min-height: 44px; padding: .5rem .65rem; background: transparent; color: #e7afbd; font-size: .8rem; }
+.preset-name-label { display: block; margin: 1rem 0 .5rem; font-size: .875rem; }
+.text-field { width: 100%; min-height: 48px; padding: .65rem .85rem; background: var(--panel); color: inherit; border: 1px solid var(--track); border-radius: .75rem; }
+#preset-save { width: 100%; margin-top: .75rem; }
+#preset-status { margin-bottom: 1rem; }

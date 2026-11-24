@@ -1,10 +1,16 @@
-import { createDiscussionTimer } from './discussion-timer.js?v=103';
-import { words } from './words.js?v=103';
-import { createWordDeck } from './word-deck.js?v=103';
+import { createPresetStore } from './presets.js?v=104';
+import { createDiscussionTimer } from './discussion-timer.js?v=104';
+import { words } from './words.js?v=104';
+import { createWordDeck } from './word-deck.js?v=104';
 
 const wordDeck = createWordDeck(words);
 const wordPackages = [...new Set(words.map(entry => entry.category))];
 let selectedPackages = [...wordPackages];
+// Accessing localStorage itself can throw in restricted browser contexts.
+let presetStorage;
+try { presetStorage = globalThis.localStorage; } catch {}
+const presetStore = createPresetStore(wordPackages, presetStorage ?? null);
+let savedPresets = presetStore.read();
 const placeholderPair = ['Hemligt ord', 'Ledtråd', 'Kategori'];
 let usePlaceholders = false;
 
@@ -71,6 +77,63 @@ const label = i => names[i].trim() || 'Spelare ' + (i + 1);
 const escape = value => value.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const button = (id, title) => '<button type="button" id="'+id+'">'+title+'</button>';
 function on(id, fn) { document.getElementById(id).onclick = fn; }
+function bindPresets(beforeSave = () => {}) {
+  const container = document.querySelector('#presets');
+  container.innerHTML = '<details class="preset-panel"><summary>Egna presets <span id="preset-total"></span></summary>'+
+    '<p class="setting-note">Spara spelare, regler, timer och ordpaket på den här enheten.</p><div id="preset-list"></div>'+
+    '<label class="preset-name-label" for="preset-name">Namn på preset</label>'+
+    '<input id="preset-name" class="text-field" maxlength="40" placeholder="Till exempel Fredagsgänget" autocomplete="off">'+
+    '<button type="button" class="secondary-button" id="preset-save">Spara eller uppdatera</button>'+
+    '<p class="setting-note" id="preset-status" role="status"></p></details>';
+  const status = text => { container.querySelector('#preset-status').textContent = text; };
+  function paint() {
+    container.querySelector('#preset-total').textContent = '('+savedPresets.length+')';
+    const list = container.querySelector('#preset-list');
+    list.replaceChildren();
+    savedPresets.forEach(preset => {
+      const row = document.createElement('div');
+      row.className = 'preset-row';
+      row.innerHTML = '<button type="button" class="preset-load"><strong>'+escape(preset.name)+'</strong><small>'+preset.players.length+' spelare · '+preset.packages.length+' paket</small></button>'+
+        '<button type="button" class="preset-delete" aria-label="Ta bort '+escape(preset.name)+'">Ta bort</button>';
+      row.querySelector('.preset-load').onclick = () => {
+        names.splice(0, names.length, ...preset.players);
+        roleHistory.splice(0, roleHistory.length, ...names.map(() => ({ debt: 0, last: 0 })));
+        balancedRounds = 0;
+        count = preset.count; specialChance = preset.special; hintMode = preset.hint;
+        discussionSeconds = preset.timer; selectedPackages = [...preset.packages];
+        go(stage);
+        const panel = document.querySelector('#presets details'); panel.open = true;
+        document.querySelector('#preset-name').value = preset.name;
+        document.querySelector('#preset-status').textContent = 'Läste in '+preset.name+'.';
+      };
+      row.querySelector('.preset-delete').onclick = () => {
+        const next = savedPresets.filter(item => item.id !== preset.id);
+        if (!presetStore.write(next)) { status('Kunde inte ta bort preset. Lagring är inte tillgänglig.'); return; }
+        savedPresets = next; paint(); status('Tog bort '+preset.name+'.');
+        container.querySelector('#preset-save').focus();
+      };
+      list.append(row);
+    });
+  }
+  on('preset-save', () => {
+    beforeSave();
+    const input = container.querySelector('#preset-name');
+    const name = input.value.trim();
+    if (!name) { status('Ge ditt preset ett namn.'); input.focus(); return; }
+    if (!selectedPackages.length) { status('Välj minst ett ordpaket innan du sparar.'); return; }
+    const existing = savedPresets.find(preset => preset.name.toLocaleLowerCase('sv') === name.toLocaleLowerCase('sv'));
+    if (!existing && savedPresets.length >= 30) { status('Du har 30 presets. Ta bort ett för att spara fler.'); return; }
+    const preset = { id: existing?.id ?? crypto.randomUUID(), name, players: [...names], count,
+      special: specialChance, hint: hintMode, timer: discussionSeconds, packages: [...selectedPackages] };
+    const next = existing ? savedPresets.map(item => item.id === existing.id ? preset : item) : [...savedPresets, preset];
+    if (!presetStore.write(next)) { status('Kunde inte spara. Lagring är inte tillgänglig på den här enheten.'); return; }
+    savedPresets = next; paint(); status((existing ? 'Uppdaterade ' : 'Sparade ')+name+'.');
+  });
+  container.querySelector('#preset-name').onkeydown = event => {
+    if (event.key === 'Enter') { event.preventDefault(); container.querySelector('#preset-save').click(); }
+  };
+  paint();
+}
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const motion = { duration: 220, easing: 'cubic-bezier(.2,.8,.2,1)' };
 // Replace immediately: a hidden role must never linger in an outgoing layer.
@@ -409,7 +472,7 @@ function render() {
   document.querySelector('footer').hidden = stage > 0;
   const title = text => '<h1 tabindex="-1">'+text+'</h1>';
   if (stage === 0) {
-    screen.innerHTML = title('Spelare')+'<div class="counter">'+button('less','−')+'<strong role="status" aria-atomic="true"><span id="player-count" class="changing-value">'+names.length+'</span> spelare</strong>'+button('more','+')+'</div><ol></ol>'+button('next','Till regler')+
+    screen.innerHTML = title('Spelare')+'<div class="counter">'+button('less','−')+'<strong role="status" aria-atomic="true"><span id="player-count" class="changing-value">'+names.length+'</span> spelare</strong>'+button('more','+')+'</div><ol></ol><div id="presets"></div>'+button('next','Till regler')+
       '<button type="button" id="placeholders" aria-pressed="'+usePlaceholders+'">Placeholders (dev): '+(usePlaceholders ? 'på' : 'av')+'</button>';
     changeNumber(document.querySelector('#player-count'), names.length, { animate: false });
     const list = screen.querySelector('ol');
@@ -426,6 +489,7 @@ function render() {
       toggle.setAttribute('aria-pressed', String(usePlaceholders));
       toggle.textContent = 'Placeholders (dev): ' + (usePlaceholders ? 'på' : 'av');
     });
+    bindPresets();
     on('next',()=>go(1));
   } else if (stage === 1) {
     function field(id, text, value, min, max) {
@@ -455,7 +519,7 @@ function render() {
       '<details><summary>Välj ordpaket</summary><div class="package-list">'+
       wordPackages.map((category, i) => '<label><input type="checkbox" name="package" value="'+i+'"'+(selectedPackages.includes(category) ? ' checked' : '')+'><span>'+escape(category)+'</span><small>'+words.filter(entry => entry.category === category).length+'</small></label>').join('')+
       '</div></details><p id="package-error" class="setting-note" hidden>Välj minst ett ordpaket för att spela.</p></fieldset>'+
-      '<button id="deal">Dela ut rollkort</button></form>'+button('back','Tillbaka till spelarna');
+      '<div id="presets"></div><button id="deal">Dela ut rollkort</button></form>'+button('back','Tillbaka till spelarna');
     const form = screen.querySelector('form');
     function refreshPackages() {
       selectedPackages = [...form.querySelectorAll('input[name="package"]:checked')].map(input => wordPackages[Number(input.value)]);
@@ -665,6 +729,7 @@ function render() {
       };
     });
     form.oninput=event=>{ if(event.target.matches('input[type=range]')) haptic('tick'); stopRulers(); refresh(true, true); }; refresh();
+    bindPresets(save);
     form.onsubmit=e=>{ e.preventDefault(); save(); setupRound(); };
     on('back',()=>{ if(form.checkValidity()) save(); go(0); });
   } else if (stage === 2) {
