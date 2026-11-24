@@ -134,7 +134,7 @@ footer:has(#install[hidden]) { display: none; }
   .secret.open .secret-object { transform: rotateY(-180deg); }
   .sorting li:not(.dragging) { transition: transform 165ms var(--ease); }
   .dragging { scale: 1.015; transition: scale 120ms ease-out; }
-  .rule:not(.tracking) .ruler-ticks i { transition: transform 180ms var(--ease), opacity 180ms var(--ease); }
+  .rule:not(.tracking):not(.gliding) .ruler-ticks i { transition: transform 180ms var(--ease), opacity 180ms var(--ease); }
   #screen[data-entry] { --entry-offset: .7rem; }
   #screen[data-entry="back"] { --entry-offset: -.7rem; }
   #screen[data-entry] > h1, #screen[data-entry] > form, #screen[data-entry] > .secret { animation: step-in 200ms var(--ease); }

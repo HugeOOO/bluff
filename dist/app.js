@@ -1,7 +1,7 @@
-import { createPresetStore } from './presets.js?v=110';
-import { createDiscussionTimer } from './discussion-timer.js?v=110';
-import { words } from './words.js?v=110';
-import { createWordDeck } from './word-deck.js?v=110';
+import { createPresetStore } from './presets.js?v=111';
+import { createDiscussionTimer } from './discussion-timer.js?v=111';
+import { words } from './words.js?v=111';
+import { createWordDeck } from './word-deck.js?v=111';
 
 const wordDeck = createWordDeck(words);
 const wordPackages = [...new Set(words.map(entry => entry.category))];
@@ -593,9 +593,40 @@ function render() {
     const controls = [...form.querySelectorAll('input[type=number], input[type=range]')];
     const rulerControls = controls.filter(input => input.type === 'range');
     const rulerControllers = new Map();
-    function stopRulers() { rulerControllers.forEach(stop => stop()); }
-    function paintRuler(input, value = input.valueAsNumber) {
+    const rulerPositions = new Map();
+    const rulerSlides = new Map();
+    function stopRulers() {
+      rulerControllers.forEach(stop => stop());
+      for (const [input, slide] of rulerSlides) {
+        cancelAnimationFrame(slide.frame);
+        rulerSlides.delete(input);
+        input.closest('.rule').classList.remove('gliding');
+        paintRuler(input);
+      }
+    }
+    function glideRuler(input, target, from = rulerPositions.get(input) ?? input.valueAsNumber) {
+      input.value = target;
+      if (reducedMotion.matches || from === target) { refresh(true); return; }
+      const rule = input.closest('.rule');
+      const slide = { value: from, frame: null };
+      rulerSlides.set(input, slide);
+      rule.classList.add('gliding');
+      refresh(true);
+      const started = performance.now();
+      const duration = Math.min(650, 240 + Math.abs(target - from) * 2);
+      function tick(now) {
+        if (!input.isConnected) { rulerSlides.delete(input); return; }
+        const progress = reducedMotion.matches ? 1 : Math.min(1, (now - started) / duration);
+        slide.value = from + (target - from) * (1 - (1 - progress) ** 3);
+        paintRuler(input, slide.value);
+        if (progress < 1) slide.frame = requestAnimationFrame(tick);
+        else { rulerSlides.delete(input); rule.classList.remove('gliding'); paintRuler(input); }
+      }
+      slide.frame = requestAnimationFrame(tick);
+    }
+    function paintRuler(input, value = rulerSlides.get(input)?.value ?? input.valueAsNumber) {
       if (input.id === 'count') return;
+      rulerPositions.set(input, value);
       const rule = input.closest('.rule');
       const radius = Math.max(1, rule.querySelector('.slider').clientWidth / 2 - 8);
       const step = 10;
@@ -714,7 +745,9 @@ function render() {
       track.onpointerdown = event => {
         if (pointer !== null || !event.isPrimary || event.button !== 0 || input.disabled) return;
         event.preventDefault();
+        const visible = rulerSlides.get(input)?.value;
         stopRulers();
+        if (visible !== undefined) input.value = Math.round(visible);
         refresh(true);
         input.focus({preventScroll:true});
         pointer = event.pointerId;
@@ -771,19 +804,20 @@ function render() {
     function save(){ stopRulers(); refresh(); count = form.elements.count.valueAsNumber; specialChance = form.elements.special.valueAsNumber; discussionSeconds = form.elements.duration.valueAsNumber; hintMode = form.elements['hint-mode'].value; }
     form.querySelectorAll('[data-timer]').forEach(control => {
       control.onclick = () => {
+        const input = form.elements.duration;
+        const from = rulerPositions.get(input);
         stopRulers();
-        form.elements.duration.value = Number(control.dataset.timer);
-        refresh(true);
+        glideRuler(input, Number(control.dataset.timer), from);
       };
     });
     form.querySelectorAll('[data-shortcut]').forEach(control => {
       control.onclick = () => {
+        const from = rulerPositions.get(form.elements.special);
         stopRulers();
         const preset = ruleShortcuts[Number(control.dataset.shortcut)];
         form.elements.count.value = Math.min(preset.count, names.length - 1);
-        form.elements.special.value = preset.special;
         form.querySelector('input[name="hint-mode"][value="'+preset.hint+'"]').checked = true;
-        refresh(true);
+        glideRuler(form.elements.special, preset.special, from);
       };
     });
     form.oninput = event => {
