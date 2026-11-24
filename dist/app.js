@@ -670,26 +670,39 @@ function advancePlayer(hold, next) {
   delete screen.dataset.entry;
   const heading = screen.querySelector('h1');
   const incomingHeading = heading.cloneNode(true);
-  for (const [visual, bounds] of [[outgoingHeading, headingRect], [incomingHeading, heading.getBoundingClientRect()]]) {
+  const incomingHeadingRect = heading.getBoundingClientRect();
+  const reelTop = Math.min(headingRect.top, incomingHeadingRect.top) - 6;
+  const reelWidth = incomingHeadingRect.width;
+  const reel = document.createElement('div');
+  reel.className = 'name-reel';
+  Object.assign(reel.style, {
+    left: incomingHeadingRect.left + 'px', top: reelTop + 'px', width: reelWidth + 'px',
+    height: Math.max(headingRect.bottom, incomingHeadingRect.bottom) - reelTop + 6 + 'px'
+  });
+  const belt = document.createElement('div');
+  belt.className = 'name-belt';
+  reel.append(belt);
+  flight.append(reel);
+  for (const [visual, bounds, offset] of [[outgoingHeading, headingRect, 0], [incomingHeading, incomingHeadingRect, reelWidth]]) {
     visual.removeAttribute('tabindex');
     visual.classList.add('name-flight');
     Object.assign(visual.style, {
-      left: bounds.left + 'px', top: bounds.top + 'px', width: bounds.width + 'px'
+      left: offset + 'px', top: bounds.top - reelTop + 'px', width: reelWidth + 'px'
     });
-    flight.append(visual);
+    belt.append(visual);
   }
   // Keep the real heading available to assistive technology while its visual
   // copies move in the same clipped layer as the cards.
   heading.classList.add('name-transitioning');
-  const nameExit = outgoingHeading.animate([
-    { transform: 'translate3d(0,0,0)', opacity: 1 },
-    { transform: 'translate3d(-32px,-3px,0)', opacity: 0 }
-  ], { duration: 210, easing: 'cubic-bezier(.4,0,1,1)', fill: 'both' });
-  const nameEntry = incomingHeading.animate([
-    { transform: 'translate3d(38px,3px,0)', opacity: 0, offset: 0 },
-    { transform: 'translate3d(-2px,0,0)', opacity: 1, offset: .8 },
-    { transform: 'translate3d(0,0,0)', opacity: 1, offset: 1 }
-  ], { duration: 440, delay: 180, easing: motion.easing, fill: 'both' });
+  // One shared belt keeps the names one cell apart, like the number drums.
+  // Wind up, sweep across the masked window, then settle after a small overshoot.
+  const nameRoll = belt.animate([
+    { transform: 'translate3d(0,0,0)', filter: 'blur(0px)', offset: 0, easing: 'ease-out' },
+    { transform: 'translate3d(10px,0,0)', filter: 'blur(0px)', offset: .12, easing: 'cubic-bezier(.5,0,.2,1)' },
+    { transform: `translate3d(${-reelWidth * 1.035}px,0,0)`, filter: 'blur(.6px)', offset: .7, easing: 'ease-out' },
+    { transform: `translate3d(${-reelWidth * .995}px,0,0)`, filter: 'blur(0px)', offset: .88, easing: 'ease-out' },
+    { transform: `translate3d(${-reelWidth}px,0,0)`, filter: 'blur(0px)', offset: 1 }
+  ], { duration: 740, delay: 50, fill: 'both' });
   const incoming = document.querySelector('#hold');
   incoming.inert = true;
   // Animate both visual cards inside the fixed, clipped layer. A transformed
@@ -727,7 +740,7 @@ function advancePlayer(hold, next) {
       42 * remaining - 76 * Math.sin(Math.PI * travel), 16 * remaining) };
   });
   const entry = incomingVisual.animate(frames, { duration: 780, delay: 105, fill: 'both', easing: 'linear' });
-  const animations = [exit, entry, nameExit, nameEntry];
+  const animations = [exit, entry, nameRoll];
   const finishMotion = () => animations.forEach(animation => animation.finish());
   reducedMotion.addEventListener('change', finishMotion, { once: true });
   Promise.allSettled(animations.map(animation => animation.finished)).then(() => {

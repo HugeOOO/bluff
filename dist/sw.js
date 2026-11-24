@@ -1,9 +1,9 @@
 const cachePrefix = 'bluff-shell-';
-const cacheName = cachePrefix + 'v75';
+const cacheName = cachePrefix + 'v76';
 const appShell = [
   './',
-  './styles.css?v=75',
-  './app.js?v=75',
+  './styles.css?v=76',
+  './app.js?v=76',
   './manifest.webmanifest',
   './icons/grain.png',
   './icons/icon-192.png',
