@@ -1,7 +1,8 @@
-import { createPresetStore } from './presets.js?v=113';
-import { createDiscussionTimer } from './discussion-timer.js?v=113';
-import { words } from './words.js?v=113';
-import { createWordDeck } from './word-deck.js?v=113';
+import { rulerSlidePosition } from './ruler-motion.js?v=114';
+import { createPresetStore } from './presets.js?v=114';
+import { createDiscussionTimer } from './discussion-timer.js?v=114';
+import { words } from './words.js?v=114';
+import { createWordDeck } from './word-deck.js?v=114';
 
 const wordDeck = createWordDeck(words);
 const wordPackages = [...new Set(words.map(entry => entry.category))];
@@ -604,11 +605,11 @@ function render() {
       rule.classList.add('gliding');
       refresh(true);
       const started = performance.now();
-      const duration = Math.min(650, 240 + Math.abs(target - from) * 2);
+      const duration = Math.min(760, 320 + Math.abs(target - from) * 2);
       function tick(now) {
         if (!input.isConnected) { rulerSlides.delete(input); return; }
         const progress = reducedMotion.matches ? 1 : Math.min(1, (now - started) / duration);
-        slide.value = from + (target - from) * (1 - (1 - progress) ** 3);
+        slide.value = rulerSlidePosition(from, target, progress, Number(input.min), Number(input.max));
         paintRuler(input, slide.value);
         if (progress < 1) slide.frame = requestAnimationFrame(tick);
         else { rulerSlides.delete(input); rule.classList.remove('gliding'); paintRuler(input); }

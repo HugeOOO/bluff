@@ -17,5 +17,5 @@ export const categoryGroups = {
   'Lek & fantasi': ['Lek och spel', 'Sagor och fantasifigurer'],
   'Kroppen & hälsa': ['Kroppen', 'Kroppens vardag']
 };
-const names = new Map(Object.entries(categoryGroups).flatMap(([group, legacy]) => legacy.map(name => [name, group])));
-export const mergeCategory = name => names.get(name) ?? name;
+const categoryAliases = new Map(Object.entries(categoryGroups).flatMap(([group, legacy]) => legacy.map(name => [name, group])));
+export const mergeCategory = name => categoryAliases.get(name) ?? name;
