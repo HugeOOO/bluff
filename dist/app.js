@@ -680,7 +680,7 @@ function showStarter(hold) {
   next.disabled = true;
   const dx = to.left - from.left, dy = to.top - from.top;
   // Give the card a head start; morph early in the descent and land in focus.
-  const nameDelay = 220, nameDuration = 850;
+  const nameDelay = 140, nameDuration = 520;
   const nameTiming = { duration: nameDuration, delay: nameDelay, fill: 'both' };
   const move = movingName.animate([
     { transform: 'translate3d(0,0,0) scale(1)', offset: 0, easing: 'cubic-bezier(.45,0,.55,1)' },
@@ -711,13 +711,13 @@ function showStarter(hold) {
   const leave = card.animate(Array.from({ length: 31 }, (_, index) => {
     const t = index / 30;
     return { offset: t, transform: `translate3d(${-distance * t * t}px,${-180 * t + 220 * t * t}px,0) rotate(${-24 * t}deg)` };
-  }), { duration: 850, fill: 'both' });
+  }), { duration: 380, fill: 'both' });
   const explain = caption.animate([
     { opacity: 0, transform: 'translateY(8px)' },
     { opacity: 1, transform: 'translateY(0)' }
-  ], { duration: 240, delay: nameDelay + nameDuration - 100, easing: motion.easing, fill: 'both' });
+  ], { duration: 160, delay: nameDelay + nameDuration - 80, easing: motion.easing, fill: 'both' });
   const action = next.animate([{ opacity: 0 }, { opacity: 1 }],
-    { duration: 220, delay: nameDelay + nameDuration - 60, fill: 'both' });
+    { duration: 160, delay: nameDelay + nameDuration - 40, fill: 'both' });
   const animations = [move, blur, morphOut, morphIn, leave, explain, action];
   const startTime = document.timeline.currentTime;
   animations.forEach(animation => { animation.startTime = startTime; });
