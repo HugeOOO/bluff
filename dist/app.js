@@ -1,7 +1,7 @@
-import { createPresetStore } from './presets.js?v=108';
-import { createDiscussionTimer } from './discussion-timer.js?v=108';
-import { words } from './words.js?v=108';
-import { createWordDeck } from './word-deck.js?v=108';
+import { createPresetStore } from './presets.js?v=109';
+import { createDiscussionTimer } from './discussion-timer.js?v=109';
+import { words } from './words.js?v=109';
+import { createWordDeck } from './word-deck.js?v=109';
 
 const wordDeck = createWordDeck(words);
 const wordPackages = [...new Set(words.map(entry => entry.category))];
@@ -232,13 +232,18 @@ function changeNumber(element, target, { animate = true, prefix = '', suffix = '
     else rollDigit(column);
   });
 }
+function durationLabel(seconds) {
+  if (!seconds) return 'Av';
+  const minutes = Math.floor(seconds / 60);
+  return [minutes ? minutes+' '+(minutes === 1 ? 'minut' : 'minuter') : '', seconds % 60 ? seconds % 60+' sekunder' : ''].filter(Boolean).join(' ');
+}
 function changeTime(element, seconds, animate) {
   if (!element.querySelector('.time-value')) {
     element.innerHTML = '<span class="time-off">Av</span><span class="time-value" aria-hidden="true"><span class="time-minutes"></span><span>:</span><span class="time-seconds"></span></span><span class="sr-only time-reading"></span>';
   }
   element.querySelector('.time-off').hidden = seconds !== 0;
   element.querySelector('.time-value').hidden = seconds === 0;
-  element.querySelector('.time-reading').textContent = seconds ? Math.floor(seconds / 60)+' minuter '+seconds % 60+' sekunder' : '';
+  element.querySelector('.time-reading').textContent = seconds ? durationLabel(seconds) : '';
   changeNumber(element.querySelector('.time-minutes'), Math.floor(seconds / 60), { animate });
   changeNumber(element.querySelector('.time-seconds'), seconds % 60, { animate, places: 2, zeroPad: true });
 }
@@ -649,7 +654,7 @@ function render() {
         rule.classList.toggle('direct-input', !animate || direct);
         const time = input.id === 'duration';
         const seconds = input.valueAsNumber;
-        const text = time ? (seconds ? Math.floor(seconds / 60)+' minuter '+seconds % 60+' sekunder' : 'Av') : input.value+' %';
+        const text = time ? durationLabel(seconds) : input.value+' %';
         paintRuler(input);
         const output = rule.querySelector('.bubble .changing-value');
         if (time) changeTime(output, seconds, animate);
@@ -785,7 +790,16 @@ function render() {
         refresh(true);
       };
     });
-    form.oninput=event=>{ if(event.target.matches('input[type=range]')) haptic('tick'); stopRulers(); refresh(true, true); }; refresh();
+    form.oninput = event => {
+      // A keyboard/assistive update wins over the last coasting frame.
+      const input = event.target;
+      const value = input.value;
+      if (input.matches('input[type=range]')) haptic('tick');
+      stopRulers();
+      input.value = value;
+      refresh(true, true);
+    };
+    refresh();
     on('choose-categories', () => {
       save(); categoryReturnStage = stage; categoryDraft = [...selectedPackages]; go(5);
     });
@@ -795,7 +809,7 @@ function render() {
     screen.innerHTML = title('Kategorier')+'<div class="settings-toolbar"><p id="category-count" class="setting-note" role="status"></p>'+button('categories-all','Alla')+'</div>'+
       '<div class="selection-grid category-grid">'+wordPackages.map((category, i) =>
         '<button type="button" class="category-tile" data-category="'+i+'" aria-pressed="false"><strong>'+escape(category)+'</strong><small>'+words.filter(entry => entry.category === category).length+' ord</small></button>').join('')+'</div>'+
-      '<p class="setting-note" id="category-error" hidden>Välj minst en kategori.</p>'+button('categories-done','Klart')+button('back','Tillbaka utan att ändra');
+      '<div class="category-actions"><p class="setting-note" id="category-error" hidden>Välj minst en kategori.</p>'+button('categories-done','Klart')+button('back','Tillbaka utan att ändra')+'</div>';
     function paintCategories() {
       screen.querySelectorAll('[data-category]').forEach(control => control.setAttribute('aria-pressed', String(categoryDraft.includes(wordPackages[Number(control.dataset.category)]))));
       const all = categoryDraft.length === wordPackages.length;

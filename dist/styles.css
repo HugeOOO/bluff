@@ -254,3 +254,8 @@ li input:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px;
 .timer-shortcuts button { padding-inline: .5rem; }
 .time-value { display: inline-flex; align-items: center; }
 .time-seconds .digit-cell { width: 1ch; }
+
+/* Keep completion within reach throughout the long category grid. No separators. */
+.category-actions { position: sticky; bottom: 0; z-index: 2; padding: 1rem 0 max(.25rem,env(safe-area-inset-bottom)); background: linear-gradient(transparent,#0c0c0f 1rem); }
+.category-actions > button { display: block; width: 100%; }
+.category-actions .setting-note { margin: 0 0 .75rem; }
