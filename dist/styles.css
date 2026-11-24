@@ -67,7 +67,7 @@ form > button { margin-top: auto; }
 .bubble { position: absolute; top: -1.75rem; left: 50%; transform: translateX(-50%); color: var(--accent); font-size: 1.4rem; font-weight: 550; white-space: nowrap; font-variant-numeric: tabular-nums; pointer-events: none; }
 .slider input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; pointer-events: none; }
 .slider:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: .5rem; }
-.slider::after { content: ''; position: absolute; left: 50%; top: 15px; width: 3px; height: 34px; background: #fff; transform: translateX(-50%); pointer-events: none; border-radius: 2px; }
+.slider::after { content: ''; position: absolute; left: 50%; top: 50%; width: 3px; height: 34px; background: #fff; transform: translate(-50%,-50%); pointer-events: none; border-radius: 2px; }
 .ruler-window {
   position: absolute; inset: 8px 0; overflow: hidden; pointer-events: none;
   mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
@@ -164,7 +164,7 @@ footer:has(#install[hidden]) { display: none; }
 .count-rule { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-bottom: 2rem; }
 .count-rule .rule-label { min-width: 0; }
 .rule-counter { flex: 0 0 auto; gap: .5rem; padding: 0; }
-.rule-counter button { width: 44px; min-height: 44px; }
+.rule-counter button { width: 48px; min-height: 48px; }
 #bluffer-count { min-width: 2ch; color: #f3f1ed; font: 400 2rem/1.5 Georgia, serif; font-variant-numeric: tabular-nums; }
 
 .hint-setting { min-width: 0; margin: 0 0 2rem; padding: 0; border: 0; }
@@ -180,7 +180,7 @@ footer:has(#install[hidden]) { display: none; }
 .hint-options label { position: relative; z-index: 1; flex: 1 1 0; min-width: 0; cursor: pointer; }
 .hint-options label:has(input:checked) { flex-grow: 1.65; }
 .hint-options input { position: absolute; width: 1px; height: 1px; opacity: 0; }
-.hint-options span { min-height: 36px; display: flex; align-items: center; justify-content: center; height: 100%; padding: .35rem .4rem; border-radius: 999px; background: transparent; color: #b6b3be; text-align: center; font-size: .8rem; line-height: 1.3; }
+.hint-options span { min-height: 44px; display: flex; align-items: center; justify-content: center; height: 100%; padding: .35rem .4rem; border-radius: 999px; background: transparent; color: #b6b3be; text-align: center; font-size: .8rem; line-height: 1.3; }
 .hint-options input:checked + span { color: #1c1827; font-weight: 700; }
 .hint-options input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 3px; }
 @media(prefers-reduced-motion:no-preference) {
@@ -260,12 +260,13 @@ li input:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px;
 .category-actions > button { display: block; width: 100%; }
 .category-actions .setting-note { margin: 0 0 .75rem; }
 
-/* A shorter rules page, grouped by the decisions players make. */
-.rules-form { margin-top: 1.5rem; gap: 1.25rem; }
+/* Keep related controls together, with room between separate decisions. */
+.rules-form { margin-top: 2rem; gap: 1.75rem; }
 .rules-form > .settings-group, .rules-form > .hint-setting { margin: 0; }
 .rules-form .rule { padding: 0; }
-.rules-form .hint-options { margin-top: .75rem; }
-.rules-form .category-link { margin-top: .75rem; }
-.rules-form .slider { height: 56px; margin: 2.25rem 0 .25rem; }
-.rules-form .timer-shortcuts { margin-top: .25rem; }
-#screen[data-stage="7"] .rules-form { margin-top: 1.5rem; }
+.rules-form .hint-options { margin-top: 1rem; }
+.rules-form .category-link { margin-top: 1.5rem; min-height: 52px; }
+.rules-form .slider { height: 56px; margin: 2.5rem 0 .5rem; }
+.rules-form .timer-shortcuts { margin-top: .5rem; gap: .75rem; }
+.rules-form .timer-shortcuts button { min-height: 52px; }
+#screen[data-stage="7"] .rules-form { margin-top: 2rem; }

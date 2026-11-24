@@ -1,4 +1,4 @@
-import { mergeCategory } from './categories.js?v=114';
+import { mergeCategory } from './categories.js?v=115';
 
 // Hint anchors approved by the player: Njure -> Kaffefilter (filtering),
 // Höna -> Maräng (egg white), Piano -> Övergångsställe (black/white fields),

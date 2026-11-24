@@ -1,8 +1,8 @@
-import { rulerSlidePosition } from './ruler-motion.js?v=114';
-import { createPresetStore } from './presets.js?v=114';
-import { createDiscussionTimer } from './discussion-timer.js?v=114';
-import { words } from './words.js?v=114';
-import { createWordDeck } from './word-deck.js?v=114';
+import { rulerSlidePosition } from './ruler-motion.js?v=115';
+import { createPresetStore } from './presets.js?v=115';
+import { createDiscussionTimer } from './discussion-timer.js?v=115';
+import { words } from './words.js?v=115';
+import { createWordDeck } from './word-deck.js?v=115';
 
 const wordDeck = createWordDeck(words);
 const wordPackages = [...new Set(words.map(entry => entry.category))];
