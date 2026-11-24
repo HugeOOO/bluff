@@ -1,0 +1,9 @@
+{
+  "appId": "se.hugeooo.bluff",
+  "appName": "Bluff",
+  "webDir": "dist",
+  "backgroundColor": "#0c0c0f",
+  "android": {
+    "backgroundColor": "#0c0c0f"
+  }
+}

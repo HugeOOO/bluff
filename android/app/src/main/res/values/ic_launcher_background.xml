@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ic_launcher_background">#0c0c0f</color>
+    <color name="bluff_background">#0c0c0f</color>
+    <color name="bluff_accent">#c8c1e0</color>
+</resources>
