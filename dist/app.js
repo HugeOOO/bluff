@@ -634,22 +634,30 @@ function render() {
   } else {
     const bluffing = names.map((_, i) => i).filter(i => bluffers.has(i));
     const hint = hintFor(pair, hintMode);
-    const hintCopy = hint ? 'Fick '+(hintMode === 'category' ? 'kategorin' : 'ledtråden')+': <b>'+escape(hint)+'</b>' : 'Ingen ledtråd';
-    const initials = value => value.trim().split(/\s+/u).slice(0, 2).map(part => [...part][0]).join('').toLocaleUpperCase('sv');
+    const hintText = hint || 'Ingen ledtråd';
     const special = bluffing.length === 0 || bluffing.length === names.length;
-    const roles = special
-      ? '<li class="result-role result-role-special"><span class="result-avatar" aria-hidden="true">◇</span><span class="result-role-copy"><strong>'+
-        (bluffing.length ? 'Alla bluffade' : 'Ingen bluffade')+'</strong><small class="result-hint">'+
-        (bluffing.length ? hintCopy : 'Alla fick samma ord.')+'</small></span></li>'
-      : bluffing.map(i => '<li class="result-role"><span class="result-avatar" aria-hidden="true">'+escape(initials(label(i)))+'</span>'+
-        '<span class="result-role-copy"><strong>'+escape(label(i))+'</strong><span class="result-role-status">bluffade</span>'+
-        '<small class="result-hint">'+hintCopy+'</small></span></li>').join('');
+    const roleSummary = special ? (bluffing.length ? 'Alla bluffade' : 'Ingen bluffade')
+      : bluffing.map(i => label(i)).join(', ') + ' bluffade';
+    const roleNames = special
+      ? '<span class="result-bluffer">'+escape(roleSummary)+'</span>'
+      : bluffing.map(i => '<span class="result-bluffer">'+escape(label(i))+'</span>').join('');
+    const wordLabel = pair[0]+'. '+hintText+'. Vänd för att se vilka som bluffade.';
     screen.innerHTML = '<h1 class="sr-only" tabindex="-1">Resultat</h1><div class="result-stack">'+
-      '<div class="result-word secret open" role="img" aria-label="Ordet var '+escape(pair[0])+'"><span class="secret-object" aria-hidden="true">'+
-      '<span class="secret-face secret-back"><span class="secret-emblem">◇</span></span>'+
-      '<span class="secret-face secret-front"><span class="secret-role">'+escape(pair[0])+'</span><span class="secret-emblem">◇</span></span></span></div>'+
-      '<ul class="result-roles" aria-label="Bluffare">'+roles+'</ul></div>'+
+      '<button type="button" id="result-flip" class="result-word secret open" aria-pressed="false" aria-label="'+escape(wordLabel)+'">'+
+      '<span class="secret-object" aria-hidden="true">'+
+      '<span class="secret-face secret-back result-bluff-face"><span class="result-face-content">'+
+      '<span class="result-bluffers">'+roleNames+'</span>'+
+      (special ? '' : '<span class="result-card-status">bluffade</span>')+
+      '</span><span class="result-card-prompt">Vänd för att se ordet</span></span>'+
+      '<span class="secret-face secret-front"><span class="result-face-content"><span class="secret-role">'+escape(pair[0])+'</span>'+
+      '<span class="result-card-hint">'+escape(hintText)+'</span></span><span class="result-card-prompt">Vänd för att se bluffarna</span></span></span></button></div>'+
       '<div class="result-actions">'+button('again','Spela nästa runda')+button('back','Ändra spelare och regler')+'</div>';
+    const card = screen.querySelector('#result-flip');
+    on('result-flip', () => {
+      const wordShowing = card.classList.toggle('open');
+      card.setAttribute('aria-pressed', String(!wordShowing));
+      card.setAttribute('aria-label', wordShowing ? wordLabel : roleSummary+'. Vänd för att se ordet.');
+    });
     on('again',setupRound); on('back',()=>go(0));
     revealResults();
   }
@@ -657,28 +665,15 @@ function render() {
 function revealResults() {
   if (reducedMotion.matches) return;
   const word = screen.querySelector('.result-word');
-  const animations = [
-    word.animate([
-      { transform: 'translateY(20px) scale(.94)' },
-      { transform: 'translateY(0) scale(1)' }
-    ], { duration: 400, easing: motion.easing, fill: 'both' }),
-    word.querySelector('.secret-object').animate([
-      { transform: 'rotateY(0deg)', offset: 0, easing: 'ease-out' },
-      { transform: 'rotateY(10deg)', offset: .16, easing: 'cubic-bezier(.3,.7,.2,1)' },
-      { transform: 'rotateY(-183deg)', offset: .84, easing: 'ease-out' },
-      { transform: 'rotateY(-180deg)', offset: 1 }
-    ], { duration: 660, fill: 'both' })
-  ];
-  screen.querySelectorAll('.result-role').forEach((card, index) => {
-    animations.push(card.animate([
-      { opacity: 0, transform: 'translateY(22px) rotateX(-12deg) scale(.97)' },
-      { opacity: 1, transform: 'translateY(0) rotateX(0deg) scale(1)' }
-    ], { duration: 300, delay: 400 + Math.min(index, 4) * 45, easing: motion.easing, fill: 'both' }));
-  });
+  const animations = [word.animate([
+    { transform: 'translate3d(48px,16px,0) rotate(5deg) scale(.95)', opacity: 0, offset: 0, easing: motion.easing },
+    { transform: 'translate3d(-3px,0,0) rotate(-.6deg) scale(1)', opacity: 1, offset: .8, easing: 'ease-out' },
+    { transform: 'translate3d(0,0,0) rotate(0deg) scale(1)', opacity: 1, offset: 1 }
+  ], { duration: 500, fill: 'both' })];
   animations.push(screen.querySelector('.result-actions').animate([
     { opacity: 0, transform: 'translateY(10px)' },
     { opacity: 1, transform: 'translateY(0)' }
-  ], { duration: 180, delay: 660, easing: motion.easing, fill: 'both' }));
+  ], { duration: 180, delay: 320, easing: motion.easing, fill: 'both' }));
   const startTime = document.timeline.currentTime;
   animations.forEach(animation => { animation.startTime = startTime; });
   const finish = () => animations.forEach(animation => animation.finish());
