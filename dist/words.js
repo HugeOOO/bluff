@@ -1,3 +1,5 @@
+import { mergeCategory } from './categories.js?v=113';
+
 // Hint anchors approved by the player: Njure -> Kaffefilter (filtering),
 // Höna -> Maräng (egg white), Piano -> Övergångsställe (black/white fields),
 // Blyertspenna -> Diamant (carbon). Keep one concrete, familiar middle link.
@@ -1061,6 +1063,6 @@ Magiker|Kortlek|Försvinnande kanin`
 export const words = Object.entries(groups).flatMap(([category, rows]) =>
   rows.trim().split('\n').map(row => {
     const [word, ...hints] = row.split('|');
-    return { word, hints, category };
+    return { word, hints, category: mergeCategory(category) };
   })
 );

@@ -1,7 +1,7 @@
-import { createPresetStore } from './presets.js?v=112';
-import { createDiscussionTimer } from './discussion-timer.js?v=112';
-import { words } from './words.js?v=112';
-import { createWordDeck } from './word-deck.js?v=112';
+import { createPresetStore } from './presets.js?v=113';
+import { createDiscussionTimer } from './discussion-timer.js?v=113';
+import { words } from './words.js?v=113';
+import { createWordDeck } from './word-deck.js?v=113';
 
 const wordDeck = createWordDeck(words);
 const wordPackages = [...new Set(words.map(entry => entry.category))];
