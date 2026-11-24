@@ -1,5 +1,5 @@
-import { words } from './words.js?v=100';
-import { createWordDeck } from './word-deck.js?v=100';
+import { words } from './words.js?v=101';
+import { createWordDeck } from './word-deck.js?v=101';
 
 const wordDeck = createWordDeck(words);
 const placeholderPair = ['Hemligt ord', 'Ledtråd', 'Kategori'];
@@ -49,6 +49,11 @@ const names = ['', '', '', ''];
 const roleHistory = names.map(() => ({ debt: 0, last: 0 }));
 let balancedRounds = 0;
 let hintMode = 'clue';
+const ruleShortcuts = [
+  { name: 'Första gången', count: 1, special: 0, hint: 'clue', description: 'En bluffare med ledtråd. Inga överraskningar.' },
+  { name: 'Klassiskt', count: 1, special: 0, hint: 'none', description: 'En bluffare utan ledtråd. Läs av varandra.' },
+  { name: 'Kaos', count: 2, special: 25, hint: 'category', description: 'Två bluffare med kategori. 25 % chans att alla eller ingen bluffar.' }
+];
 const hintFor = (entry, mode) => mode === 'category' ? entry[2] : mode === 'clue' ? entry[1] : '';
 function roleText(index) {
   if (!bluffers.has(index)) return pair[0];
@@ -419,7 +424,10 @@ function render() {
         '<span class="bubble" aria-hidden="true"><span class="changing-value"></span></span><input type="range" id="'+id+
         '" min="'+min+'" max="'+max+'" value="'+value+'"></div></div>';
     }
-    screen.innerHTML = title('Regler')+'<form>'+
+    screen.innerHTML = title('Regler')+'<form>'+ 
+      '<fieldset class="settings-group"><legend>Snabbval</legend><div class="choice-row">'+
+      ruleShortcuts.map((preset, i) => '<button type="button" data-shortcut="'+i+'" aria-pressed="false">'+preset.name+'</button>').join('')+
+      '</div><p class="setting-note" id="shortcut-note" aria-live="polite">Välj ett upplägg eller justera själv.</p></fieldset>'+
       '<div class="rule count-rule" role="group" aria-labelledby="count-label"><span id="count-label" class="rule-label">Antal Bluffare</span>'+
       '<input type="number" id="count" min="1" max="'+(names.length-1)+'" value="'+count+'" hidden>'+
       '<div class="counter rule-counter"><button type="button" id="count-less" aria-label="Minska antal bluffare">−</button>'+
@@ -478,6 +486,11 @@ function render() {
       track.append(rulerWindow);
     }
     function refresh(animate = false, direct = false) {
+      const active = ruleShortcuts.findIndex(preset =>
+        Math.min(preset.count, names.length - 1) === form.elements.count.valueAsNumber &&
+        preset.special === form.elements.special.valueAsNumber && preset.hint === form.elements['hint-mode'].value);
+      form.querySelectorAll('[data-shortcut]').forEach((control, i) => control.setAttribute('aria-pressed', String(i === active)));
+      form.querySelector('#shortcut-note').textContent = active < 0 ? 'Egna regler. Justera precis som ni vill.' : ruleShortcuts[active].description;
       for (const input of controls) {
         const percent = input.id !== 'count';
         if (!percent) {
@@ -605,6 +618,16 @@ function render() {
     });
     resizeRulers.observe(form);
     function save(){ stopRulers(); refresh(); [count,specialChance]=controls.map(input=>input.valueAsNumber); hintMode = form.elements['hint-mode'].value; }
+    form.querySelectorAll('[data-shortcut]').forEach(control => {
+      control.onclick = () => {
+        stopRulers();
+        const preset = ruleShortcuts[Number(control.dataset.shortcut)];
+        form.elements.count.value = Math.min(preset.count, names.length - 1);
+        form.elements.special.value = preset.special;
+        form.querySelector('input[name="hint-mode"][value="'+preset.hint+'"]').checked = true;
+        refresh(true);
+      };
+    });
     form.oninput=event=>{ if(event.target.matches('input[type=range]')) haptic('tick'); stopRulers(); refresh(true, true); }; refresh();
     form.onsubmit=e=>{ e.preventDefault(); save(); setupRound(); };
     on('back',()=>{ if(form.checkValidity()) save(); go(0); });
