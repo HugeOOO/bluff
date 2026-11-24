@@ -679,30 +679,33 @@ function showStarter(hold) {
   name.classList.add('name-transitioning');
   next.disabled = true;
   const dx = to.left - from.left, dy = to.top - from.top;
+  // Give the card a head start; morph early in the descent and land in focus.
+  const nameDelay = 220, nameDuration = 850;
+  const nameTiming = { duration: nameDuration, delay: nameDelay, fill: 'both' };
   const move = movingName.animate([
-    { transform: 'translate3d(0,0,0) scale(1)', offset: 0, easing: 'cubic-bezier(.45,0,.2,1)' },
-    { transform: `translate3d(${dx}px,${dy + 10}px,0) scale(1.025)`, offset: .75, easing: 'ease-out' },
-    { transform: `translate3d(${dx}px,${dy - 2}px,0) scale(.995)`, offset: .9, easing: 'ease-out' },
+    { transform: 'translate3d(0,0,0) scale(1)', offset: 0, easing: 'cubic-bezier(.45,0,.55,1)' },
+    { transform: `translate3d(${dx}px,${dy + 10}px,0) scale(1.025)`, offset: .8, easing: 'ease-out' },
+    { transform: `translate3d(${dx}px,${dy - 2}px,0) scale(.995)`, offset: .92, easing: 'ease-out' },
     { transform: `translate3d(${dx}px,${dy}px,0) scale(1)`, offset: 1 }
-  ], { duration: 850, fill: 'both' });
+  ], nameTiming);
   // Swap the words only in the middle of a fully blurred plateau. No readable
   // letters crossfade or visibly change shape while the name travels down.
   const blur = movingName.animate([
     { filter: 'blur(0px)', offset: 0 },
-    { filter: 'blur(0px)', offset: .16 },
-    { filter: 'blur(24px)', offset: .38 },
-    { filter: 'blur(24px)', offset: .62 },
-    { filter: 'blur(0px)', offset: .9 },
+    { filter: 'blur(0px)', offset: .04 },
+    { filter: 'blur(24px)', offset: .18 },
+    { filter: 'blur(24px)', offset: .32 },
+    { filter: 'blur(0px)', offset: .48 },
     { filter: 'blur(0px)', offset: 1 }
-  ], { duration: 850, fill: 'both' });
+  ], nameTiming);
   const morphOut = oldWord.animate([
-    { opacity: 1, offset: 0 }, { opacity: 1, offset: .5 },
-    { opacity: 0, offset: .5 }, { opacity: 0, offset: 1 }
-  ], { duration: 850, fill: 'both' });
+    { opacity: 1, offset: 0 }, { opacity: 1, offset: .25 },
+    { opacity: 0, offset: .25 }, { opacity: 0, offset: 1 }
+  ], nameTiming);
   const morphIn = newWord.animate([
-    { opacity: 0, offset: 0 }, { opacity: 0, offset: .5 },
-    { opacity: 1, offset: .5 }, { opacity: 1, offset: 1 }
-  ], { duration: 850, fill: 'both' });
+    { opacity: 0, offset: 0 }, { opacity: 0, offset: .25 },
+    { opacity: 1, offset: .25 }, { opacity: 1, offset: 1 }
+  ], nameTiming);
   // The outgoing card stays covered and clipped independently of the page.
   const distance = cardRect.right + cardRect.height * .4 + 48;
   const leave = card.animate(Array.from({ length: 31 }, (_, index) => {
@@ -712,9 +715,9 @@ function showStarter(hold) {
   const explain = caption.animate([
     { opacity: 0, transform: 'translateY(8px)' },
     { opacity: 1, transform: 'translateY(0)' }
-  ], { duration: 240, delay: 650, easing: motion.easing, fill: 'both' });
+  ], { duration: 240, delay: nameDelay + nameDuration - 100, easing: motion.easing, fill: 'both' });
   const action = next.animate([{ opacity: 0 }, { opacity: 1 }],
-    { duration: 220, delay: 680, fill: 'both' });
+    { duration: 220, delay: nameDelay + nameDuration - 60, fill: 'both' });
   const animations = [move, blur, morphOut, morphIn, leave, explain, action];
   const startTime = document.timeline.currentTime;
   animations.forEach(animation => { animation.startTime = startTime; });
