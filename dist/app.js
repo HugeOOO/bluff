@@ -748,38 +748,25 @@ function advancePlayer(hold, next) {
   const heading = screen.querySelector('h1');
   const incomingHeading = heading.cloneNode(true);
   const incomingHeadingRect = heading.getBoundingClientRect();
-  const reelTop = Math.min(headingRect.top, incomingHeadingRect.top) - 6;
-  const reelWidth = incomingHeadingRect.width;
-  const reel = document.createElement('div');
-  reel.className = 'name-reel';
-  Object.assign(reel.style, {
-    left: incomingHeadingRect.left + 'px', top: reelTop + 'px', width: reelWidth + 'px',
-    height: Math.max(headingRect.bottom, incomingHeadingRect.bottom) - reelTop + 6 + 'px'
-  });
-  const belt = document.createElement('div');
-  belt.className = 'name-belt';
-  reel.append(belt);
-  flight.append(reel);
-  for (const [visual, bounds, offset] of [[outgoingHeading, headingRect, 0], [incomingHeading, incomingHeadingRect, reelWidth]]) {
+  // Each name travels with its card in one shared horizontal coordinate system.
+  // Local card rotation/arc cannot make the text depart or land at another time.
+  const outgoingPair = document.createElement('div');
+  const incomingPair = document.createElement('div');
+  outgoingPair.className = incomingPair.className = 'deal-flight-pair';
+  for (const [visual, bounds, group] of [
+    [outgoingHeading, headingRect, outgoingPair],
+    [incomingHeading, incomingHeadingRect, incomingPair]
+  ]) {
     visual.removeAttribute('tabindex');
     visual.classList.add('name-flight');
     Object.assign(visual.style, {
-      left: offset + 'px', top: bounds.top - reelTop + 'px', width: reelWidth + 'px'
+      left: bounds.left + 'px', top: bounds.top + 'px', width: bounds.width + 'px'
     });
-    belt.append(visual);
+    group.append(visual);
   }
-  // Keep the real heading available to assistive technology while its visual
-  // copies move in the same clipped layer as the cards.
+  outgoingPair.append(outgoing);
+  flight.append(outgoingPair, incomingPair);
   heading.classList.add('name-transitioning');
-  // One shared belt keeps the names one cell apart, like the number drums.
-  // Wind up, sweep across the masked window, then settle after a small overshoot.
-  const nameRoll = belt.animate([
-    { transform: 'translate3d(0,0,0)', filter: 'blur(0px)', offset: 0, easing: 'ease-out' },
-    { transform: 'translate3d(10px,0,0)', filter: 'blur(0px)', offset: .12, easing: 'cubic-bezier(.5,0,.2,1)' },
-    { transform: `translate3d(${-reelWidth * 1.035}px,0,0)`, filter: 'blur(.6px)', offset: .7, easing: 'ease-out' },
-    { transform: `translate3d(${-reelWidth * .995}px,0,0)`, filter: 'blur(0px)', offset: .88, easing: 'ease-out' },
-    { transform: `translate3d(${-reelWidth}px,0,0)`, filter: 'blur(0px)', offset: 1 }
-  ], { duration: 740, delay: 50, fill: 'both' });
   const incoming = document.querySelector('#hold');
   incoming.inert = true;
   // Animate both visual cards inside the fixed, clipped layer. A transformed
@@ -790,34 +777,46 @@ function advancePlayer(hold, next) {
     left: incomingRect.left + 'px', top: incomingRect.top + 'px',
     width: incomingRect.width + 'px', height: incomingRect.height + 'px'
   });
-  flight.append(incomingVisual);
+  incomingPair.append(incomingVisual);
   incoming.style.visibility = 'hidden';
   const distance = Math.max(rect.right, innerWidth - rect.left) + rect.height * .4 + 48;
   const transform = (x, y, angle) => `translate3d(${x}px, ${y}px, 0) rotate(${angle}deg)`;
-  const exitFrames = Array.from({ length: 41 }, (_, index) => {
+  const exitTravel = [], exitArc = [];
+  for (let index = 0; index <= 40; index++) {
     const t = index / 40;
+    let x, y, angle;
     if (t < .16) {
       const windup = Math.sin(t / .16 * Math.PI / 2);
-      return { offset: t, transform: transform(12 * windup, 3 * windup, 2 * windup) };
+      x = 12 * windup; y = 3 * windup; angle = 2 * windup;
+    } else {
+      const throwTime = (t - .16) / .84;
+      x = 12 - (distance + 12) * throwTime ** 2;
+      y = 3 - 300 * throwTime + 351 * throwTime ** 2;
+      angle = 2 - 28 * throwTime;
     }
-    const throwTime = (t - .16) / .84;
-    return { offset: t, transform: transform(12 - (distance + 12) * throwTime ** 2,
-      3 - 300 * throwTime + 351 * throwTime ** 2, 2 - 28 * throwTime) };
-  });
-  const exit = outgoing.animate(exitFrames, { duration: 460, fill: 'both', easing: 'linear' });
-  // Sample an underdamped spring, with a shallow arc tied to its travel.
-  // Velocity carries past the resting point once, then dissipates naturally.
-  const frames = Array.from({ length: 61 }, (_, index) => {
+    exitTravel.push({ offset: t, transform: transform(x, 0, 0) });
+    exitArc.push({ offset: t, transform: transform(0, y, angle) });
+  }
+  const exitTiming = { duration: 460, fill: 'both', easing: 'linear' };
+  const exit = outgoingPair.animate(exitTravel, exitTiming);
+  const exitCard = outgoing.animate(exitArc, exitTiming);
+  const entryTravel = [], entryArc = [];
+  for (let index = 0; index <= 60; index++) {
     const t = index / 60;
     const seconds = t * .78;
     const remaining = index === 60 ? 0 : Math.exp(-11.7 * seconds) *
       (Math.cos(9.39 * seconds) + 11.7 / 9.39 * Math.sin(9.39 * seconds));
     const travel = Math.max(0, Math.min(1, 1 - remaining));
-    return { offset: t, transform: transform(distance * remaining,
-      42 * remaining - 76 * Math.sin(Math.PI * travel), 16 * remaining) };
-  });
-  const entry = incomingVisual.animate(frames, { duration: 780, delay: 105, fill: 'both', easing: 'linear' });
-  const animations = [exit, entry, nameRoll];
+    entryTravel.push({ offset: t, transform: transform(distance * remaining, 0, 0) });
+    entryArc.push({ offset: t, transform: transform(0,
+      42 * remaining - 76 * Math.sin(Math.PI * travel), 16 * remaining) });
+  }
+  const entryTiming = { duration: 780, delay: 105, fill: 'both', easing: 'linear' };
+  const entry = incomingPair.animate(entryTravel, entryTiming);
+  const entryCard = incomingVisual.animate(entryArc, entryTiming);
+  const animations = [exit, exitCard, entry, entryCard];
+  const startTime = document.timeline.currentTime;
+  animations.forEach(animation => { animation.startTime = startTime; });
   const finishMotion = () => animations.forEach(animation => animation.finish());
   reducedMotion.addEventListener('change', finishMotion, { once: true });
   Promise.allSettled(animations.map(animation => animation.finished)).then(() => {
