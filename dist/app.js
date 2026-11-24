@@ -388,7 +388,10 @@ function secretMarkup() {
     '<span class="secret-face secret-back"><span class="secret-mark">Bluff</span><span class="secret-copy">Håll för att kika</span><span class="secret-emblem">◇</span></span>'+
     '<span class="secret-face secret-front"><span class="secret-mark">Ditt rollkort</span><span class="secret-role"></span></span></span>';
 }
+let finishResultReveal = null;
 function render() {
+  finishResultReveal?.();
+  finishResultReveal = null;
   delete screen.dataset.entry;
   screen.dataset.stage = stage;
   document.querySelector('footer').hidden = stage > 0;
@@ -648,7 +651,52 @@ function render() {
       '<ul class="result-roles" aria-label="Bluffare">'+roles+'</ul></div>'+
       '<div class="result-actions">'+button('again','Spela nästa runda')+button('back','Ändra spelare och regler')+'</div>';
     on('again',setupRound); on('back',()=>go(0));
+    revealResults();
   }
+}
+function revealResults() {
+  if (reducedMotion.matches) return;
+  const word = screen.querySelector('.result-word');
+  const animations = [
+    word.animate([
+      { transform: 'translateY(20px) scale(.94)' },
+      { transform: 'translateY(0) scale(1)' }
+    ], { duration: 400, easing: motion.easing, fill: 'both' }),
+    word.querySelector('.secret-object').animate([
+      { transform: 'rotateY(0deg)', offset: 0, easing: 'ease-out' },
+      { transform: 'rotateY(10deg)', offset: .16, easing: 'cubic-bezier(.3,.7,.2,1)' },
+      { transform: 'rotateY(-183deg)', offset: .84, easing: 'ease-out' },
+      { transform: 'rotateY(-180deg)', offset: 1 }
+    ], { duration: 660, fill: 'both' })
+  ];
+  screen.querySelectorAll('.result-role').forEach((card, index) => {
+    animations.push(card.animate([
+      { opacity: 0, transform: 'translateY(22px) rotateX(-12deg) scale(.97)' },
+      { opacity: 1, transform: 'translateY(0) rotateX(0deg) scale(1)' }
+    ], { duration: 300, delay: 400 + Math.min(index, 4) * 45, easing: motion.easing, fill: 'both' }));
+  });
+  animations.push(screen.querySelector('.result-actions').animate([
+    { opacity: 0, transform: 'translateY(10px)' },
+    { opacity: 1, transform: 'translateY(0)' }
+  ], { duration: 180, delay: 660, easing: motion.easing, fill: 'both' }));
+  const startTime = document.timeline.currentTime;
+  animations.forEach(animation => { animation.startTime = startTime; });
+  const finish = () => animations.forEach(animation => animation.finish());
+  const skip = event => {
+    if (!screen.contains(event.target)) return;
+    if (event.type === 'click' || ['Enter', ' '].includes(event.key)) finish();
+  };
+  finishResultReveal = finish;
+  screen.addEventListener('click', skip, true);
+  screen.addEventListener('keydown', skip, true);
+  reducedMotion.addEventListener('change', finish, { once: true });
+  Promise.allSettled(animations.map(animation => animation.finished)).then(() => {
+    screen.removeEventListener('click', skip, true);
+    screen.removeEventListener('keydown', skip, true);
+    reducedMotion.removeEventListener('change', finish);
+    if (finishResultReveal === finish) finishResultReveal = null;
+    animations.forEach(animation => animation.cancel());
+  });
 }
 function showStarter(hold) {
   const previousHeading = screen.querySelector('h1');
