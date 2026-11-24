@@ -44,17 +44,26 @@ export function createWordDeck(entries, { storage, random = Math.random } = {}) 
   }
 
   return {
-    draw() {
-      if (!remaining.length) {
-        const shuffled = shuffle([...byWord.keys()]);
+    draw(categories = null) {
+      const selected = categories === null ? null : new Set(categories);
+      const eligible = [...byWord.keys()].filter(word => !selected || selected.has(byWord.get(word).category));
+      if (!eligible.length) throw new Error('Välj minst ett ordpaket.');
+      const allowed = new Set(eligible);
+      if (!remaining.some(word => allowed.has(word))) {
+        const shuffled = shuffle(eligible);
+        const previous = recent.at(-1);
+        // Keep other packages' unplayed words and history when changing selection.
         const heldBack = new Set(recent);
         // Draw from the end, leaving the previous cycle's latest words until later.
         remaining = [
-          ...shuffled.filter(word => heldBack.has(word)),
+          ...remaining,
+          ...shuffled.filter(word => word === previous),
+          ...shuffled.filter(word => heldBack.has(word) && word !== previous),
           ...shuffled.filter(word => !heldBack.has(word))
         ];
       }
-      const word = remaining.pop();
+      const index = remaining.findLastIndex(word => allowed.has(word));
+      const [word] = remaining.splice(index, 1);
       const entry = byWord.get(word);
       const candidates = entry.hints.map((_, index) => index)
         .filter(index => entry.hints.length === 1 || index !== hintChoices[word]);

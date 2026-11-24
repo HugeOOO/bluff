@@ -1,8 +1,10 @@
-import { createDiscussionTimer } from './discussion-timer.js?v=102';
-import { words } from './words.js?v=102';
-import { createWordDeck } from './word-deck.js?v=102';
+import { createDiscussionTimer } from './discussion-timer.js?v=103';
+import { words } from './words.js?v=103';
+import { createWordDeck } from './word-deck.js?v=103';
 
 const wordDeck = createWordDeck(words);
+const wordPackages = [...new Set(words.map(entry => entry.category))];
+let selectedPackages = [...wordPackages];
 const placeholderPair = ['Hemligt ord', 'Ledtråd', 'Kategori'];
 let usePlaceholders = false;
 
@@ -284,6 +286,7 @@ function go(next) {
   document.querySelector('h1').focus();
 }
 function setupRound() {
+  if (!selectedPackages.length) return;
   const roll = Math.random()*100;
   const n = roll < specialChance / 2 ? names.length : roll < specialChance ? 0 : count;
   const order = names.map((_, i) => i);
@@ -302,7 +305,7 @@ function setupRound() {
   }
   bluffers = new Set(order.slice(0,n));
   starter = Math.floor(Math.random()*names.length);
-  pair = usePlaceholders ? placeholderPair : wordDeck.draw();
+  pair = usePlaceholders ? placeholderPair : wordDeck.draw(selectedPackages);
   turn = 0; seen = false; go(2);
 }
 function bindDrag(row, index, list) {
@@ -448,8 +451,26 @@ function render() {
       '<fieldset class="settings-group"><legend>Diskussionstimer</legend><div class="choice-row">'+
       timerOptions.map(([seconds, text]) => '<button type="button" data-timer="'+seconds+'" aria-pressed="'+(seconds === discussionSeconds)+'">'+text+'</button>').join('')+
       '</div><p class="setting-note">Starta när alla är redo. Tiden avslöjar aldrig rollerna automatiskt.</p></fieldset>'+
-      '<button>Dela ut rollkort</button></form>'+button('back','Tillbaka till spelarna');
+      '<fieldset class="settings-group package-setting"><legend>Ordpaket</legend><div class="settings-toolbar"><p id="package-count" class="setting-note" role="status"></p><button type="button" class="secondary-button" id="packages-all">Alla</button></div>'+
+      '<details><summary>Välj ordpaket</summary><div class="package-list">'+
+      wordPackages.map((category, i) => '<label><input type="checkbox" name="package" value="'+i+'"'+(selectedPackages.includes(category) ? ' checked' : '')+'><span>'+escape(category)+'</span><small>'+words.filter(entry => entry.category === category).length+'</small></label>').join('')+
+      '</div></details><p id="package-error" class="setting-note" hidden>Välj minst ett ordpaket för att spela.</p></fieldset>'+
+      '<button id="deal">Dela ut rollkort</button></form>'+button('back','Tillbaka till spelarna');
     const form = screen.querySelector('form');
+    function refreshPackages() {
+      selectedPackages = [...form.querySelectorAll('input[name="package"]:checked')].map(input => wordPackages[Number(input.value)]);
+      const totalWords = words.filter(entry => selectedPackages.includes(entry.category)).length;
+      form.querySelector('#package-count').textContent = selectedPackages.length+' av '+wordPackages.length+' paket · '+totalWords+' ord';
+      form.querySelector('#packages-all').setAttribute('aria-pressed', String(selectedPackages.length === wordPackages.length));
+      form.querySelector('#deal').disabled = selectedPackages.length === 0;
+      form.querySelector('#package-error').hidden = selectedPackages.length > 0;
+    }
+    form.querySelectorAll('input[name="package"]').forEach(input => { input.onchange = refreshPackages; });
+    on('packages-all', () => {
+      form.querySelectorAll('input[name="package"]').forEach(input => { input.checked = true; });
+      refreshPackages();
+    });
+    refreshPackages();
     const controls = [...form.querySelectorAll('input[type=number], input[type=range]')];
     const percentageControls = controls.filter(input => input.id !== 'count');
     const rulerControllers = new Map();
