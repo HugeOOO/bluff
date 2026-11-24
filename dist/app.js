@@ -1,7 +1,7 @@
-import { createPresetStore } from './presets.js?v=107';
-import { createDiscussionTimer } from './discussion-timer.js?v=107';
-import { words } from './words.js?v=107';
-import { createWordDeck } from './word-deck.js?v=107';
+import { createPresetStore } from './presets.js?v=108';
+import { createDiscussionTimer } from './discussion-timer.js?v=108';
+import { words } from './words.js?v=108';
+import { createWordDeck } from './word-deck.js?v=108';
 
 const wordDeck = createWordDeck(words);
 const wordPackages = [...new Set(words.map(entry => entry.category))];
@@ -79,61 +79,71 @@ const label = i => names[i].trim() || 'Spelare ' + (i + 1);
 const escape = value => value.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const button = (id, title) => '<button type="button" id="'+id+'">'+title+'</button>';
 function on(id, fn) { document.getElementById(id).onclick = fn; }
-function bindPresets(beforeSave = () => {}) {
-  const container = document.querySelector('#presets');
-  container.innerHTML = '<div class="preset-panel"><h2 class="settings-heading">Egna presets <span id="preset-total"></span></h2>'+
-    '<p class="setting-note">Spara spelare, regler, timer och ordpaket på den här enheten.</p><div id="preset-list"></div>'+
-    '<label class="preset-name-label" for="preset-name">Namn på preset</label>'+
-    '<input id="preset-name" class="text-field" maxlength="40" placeholder="Till exempel Fredagsgänget" autocomplete="off">'+
-    '<button type="button" class="secondary-button" id="preset-save">Spara eller uppdatera</button>'+
-    '<p class="setting-note" id="preset-status" role="status"></p></div>';
-  const status = text => { container.querySelector('#preset-status').textContent = text; };
-  function paint() {
-    container.querySelector('#preset-total').textContent = '('+savedPresets.length+')';
-    const list = container.querySelector('#preset-list');
-    list.replaceChildren();
-    savedPresets.forEach(preset => {
-      const row = document.createElement('div');
-      row.className = 'preset-row';
-      row.innerHTML = '<button type="button" class="preset-load"><strong>'+escape(preset.name)+'</strong><small>'+preset.players.length+' spelare · '+preset.packages.length+' paket</small></button>'+
-        '<button type="button" class="preset-delete" aria-label="Ta bort '+escape(preset.name)+'">Ta bort</button>';
-      row.querySelector('.preset-load').onclick = () => {
-        names.splice(0, names.length, ...preset.players);
-        roleHistory.splice(0, roleHistory.length, ...names.map(() => ({ debt: 0, last: 0 })));
-        balancedRounds = 0;
-        count = preset.count; specialChance = preset.special; hintMode = preset.hint;
-        discussionSeconds = preset.timer; selectedPackages = [...preset.packages];
-        go(stage);
-        document.querySelector('#preset-name').value = preset.name;
-        document.querySelector('#preset-status').textContent = 'Läste in '+preset.name+'.';
-      };
-      row.querySelector('.preset-delete').onclick = () => {
-        const next = savedPresets.filter(item => item.id !== preset.id);
-        if (!presetStore.write(next)) { status('Kunde inte ta bort preset. Lagring är inte tillgänglig.'); return; }
-        savedPresets = next; paint(); status('Tog bort '+preset.name+'.');
-        container.querySelector('#preset-save').focus();
-      };
-      list.append(row);
-    });
+// Preset editing uses the same controls as a normal game, with a snapshot so
+// saving or canceling a draft never changes the unfinished game on the home page.
+let presetDraft = null;
+let presetBackup = null;
+let orderPreset = null;
+let orderBackup = null;
+let homeNotice = '';
+function captureSetup() {
+  return { players: [...names], count, special: specialChance, hint: hintMode,
+    timer: discussionSeconds, packages: [...selectedPackages],
+    history: roleHistory.map(item => ({ ...item })), balancedRounds };
+}
+function applySetup(setup) {
+  names.splice(0, names.length, ...setup.players);
+  count = setup.count; specialChance = setup.special; hintMode = setup.hint;
+  discussionSeconds = setup.timer; selectedPackages = [...setup.packages];
+  roleHistory.splice(0, roleHistory.length, ...names.map((_, i) => ({ ...(setup.history?.[i] ?? { debt: 0, last: 0 }) })));
+  balancedRounds = setup.balancedRounds ?? 0;
+}
+function beginPreset(preset = null) {
+  if (!preset && savedPresets.length >= 30) {
+    homeNotice = 'Du har 30 presets. Öppna ett för att ändra eller ta bort det.'; go(0); return;
   }
-  on('preset-save', () => {
-    beforeSave();
-    const input = container.querySelector('#preset-name');
-    const name = input.value.trim();
-    if (!name) { status('Ge ditt preset ett namn.'); input.focus(); return; }
-    if (!selectedPackages.length) { status('Välj minst ett ordpaket innan du sparar.'); return; }
-    const existing = savedPresets.find(preset => preset.name.toLocaleLowerCase('sv') === name.toLocaleLowerCase('sv'));
-    if (!existing && savedPresets.length >= 30) { status('Du har 30 presets. Ta bort ett för att spara fler.'); return; }
-    const preset = { id: existing?.id ?? crypto.randomUUID(), name, players: [...names], count,
-      special: specialChance, hint: hintMode, timer: discussionSeconds, packages: [...selectedPackages] };
-    const next = existing ? savedPresets.map(item => item.id === existing.id ? preset : item) : [...savedPresets, preset];
-    if (!presetStore.write(next)) { status('Kunde inte spara. Lagring är inte tillgänglig på den här enheten.'); return; }
-    savedPresets = next; paint(); status((existing ? 'Uppdaterade ' : 'Sparade ')+name+'.');
+  presetBackup = captureSetup();
+  presetDraft = { id: preset?.id ?? null, name: preset?.name ?? '' };
+  if (preset) applySetup(preset);
+  go(6);
+}
+function closePreset(message = '') {
+  applySetup(presetBackup);
+  presetDraft = presetBackup = null;
+  homeNotice = message;
+  go(0);
+}
+function savePreset() {
+  const status = document.querySelector('#preset-status');
+  if (savedPresets.some(item => item.id !== presetDraft.id && item.name.toLocaleLowerCase('sv') === presetDraft.name.toLocaleLowerCase('sv'))) {
+    status.textContent = 'Namnet används redan. Gå tillbaka och välj ett annat namn.'; return;
+  }
+  const preset = { id: presetDraft.id ?? crypto.randomUUID(), name: presetDraft.name,
+    players: [...names], count, special: specialChance, hint: hintMode,
+    timer: discussionSeconds, packages: [...selectedPackages] };
+  const next = presetDraft.id ? savedPresets.map(item => item.id === presetDraft.id ? preset : item) : [...savedPresets, preset];
+  if (!presetStore.write(next)) { status.textContent = 'Kunde inte spara. Lagring är inte tillgänglig på den här enheten.'; return; }
+  savedPresets = next;
+  closePreset('Sparade '+preset.name+'.');
+}
+function bindPresetGrid() {
+  const grid = document.querySelector('#preset-grid');
+  savedPresets.forEach(preset => {
+    const tile = document.createElement('button');
+    tile.type = 'button'; tile.className = 'preset-tile';
+    tile.innerHTML = '<strong>'+escape(preset.name)+'</strong><small>'+preset.players.length+' spelare</small>';
+    tile.onclick = () => {
+      orderBackup = captureSetup(); orderPreset = preset;
+      applySetup(preset); go(8);
+    };
+    grid.append(tile);
   });
-  container.querySelector('#preset-name').onkeydown = event => {
-    if (event.key === 'Enter') { event.preventDefault(); container.querySelector('#preset-save').click(); }
-  };
-  paint();
+  const add = document.createElement('button');
+  add.type = 'button'; add.className = 'preset-tile preset-add'; add.id = 'preset-add';
+  add.innerHTML = '<span aria-hidden="true">+</span><small>Nytt preset</small>';
+  add.setAttribute('aria-label', 'Skapa nytt preset');
+  add.onclick = () => beginPreset();
+  grid.append(add);
 }
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const motion = { duration: 220, easing: 'cubic-bezier(.2,.8,.2,1)' };
@@ -352,8 +362,8 @@ function changePlayers(delta, list) {
   const animation = row.animate(delta > 0 ? frames : [...frames].reverse(), { ...motion, duration: delta > 0 ? 220 : 150 });
   if (delta < 0) animation.onfinish = () => row.remove();
 }
-function go(next) {
-  const direction = next < stage ? 'back' : 'forward';
+function go(next, entryDirection = null) {
+  const direction = entryDirection ?? (next < stage ? 'back' : 'forward');
   stage = next;
   render();
   screen.dataset.entry = direction;
@@ -380,7 +390,7 @@ function setupRound() {
   bluffers = new Set(order.slice(0,n));
   starter = Math.floor(Math.random()*names.length);
   pair = usePlaceholders ? placeholderPair : wordDeck.draw(selectedPackages);
-  turn = 0; seen = false; go(2);
+  turn = 0; seen = false; go(2, 'forward');
 }
 function bindDrag(row, index, list) {
   const handle = row.querySelector('.grip');
@@ -485,33 +495,74 @@ function render() {
   screen.dataset.stage = stage;
   document.querySelector('footer').hidden = stage > 0;
   const title = text => '<h1 tabindex="-1">'+text+'</h1>';
-  if (stage === 0) {
-    screen.innerHTML = title('Spelare')+'<div class="counter">'+button('less','−')+'<strong role="status" aria-atomic="true"><span id="player-count" class="changing-value">'+names.length+'</span> spelare</strong>'+button('more','+')+'</div><ol></ol><div id="presets"></div>'+button('next','Till regler')+
-      '<button type="button" id="placeholders" aria-pressed="'+usePlaceholders+'">Placeholders (dev): '+(usePlaceholders ? 'på' : 'av')+'</button>';
-    changeNumber(document.querySelector('#player-count'), names.length, { animate: false });
+  if (stage === 0 || stage === 6 || stage === 8) {
+    const editing = stage === 6;
+    const ordering = stage === 8;
+    screen.innerHTML = title(ordering ? 'Spelordning' : editing ? (presetDraft.id ? 'Ändra preset' : 'Nytt preset') : 'Spelare')+
+      (ordering ? '<p class="page-intro">'+escape(orderPreset.name)+'</p><p class="setting-note">Dra spelarna till den ordning ni sitter i. Sedan delar vi ut rollkorten.</p>' : '')+
+      (editing ? '<div class="preset-name-field"><label for="preset-name">Namn på preset</label><input id="preset-name" class="text-field" maxlength="40" placeholder="Till exempel Fredagsgänget" autocomplete="off"></div>' : '')+
+      (!ordering ? '<div class="counter">'+button('less','−')+'<strong role="status" aria-atomic="true"><span id="player-count" class="changing-value">'+names.length+'</span> spelare</strong>'+button('more','+')+'</div>' : '')+
+      '<ol></ol>'+
+      (stage === 0 ? '<div id="presets"><h2 class="settings-heading">Presets</h2><div id="preset-grid" class="selection-grid preset-grid"></div><p id="home-status" class="setting-note" role="status">'+escape(homeNotice)+'</p></div>' : '')+
+      (editing ? '<p id="preset-status" class="setting-note" role="status"></p>' : '')+
+      button('next', ordering ? 'Dela ut rollkort' : 'Till regler')+
+      (ordering ? '<button type="button" class="quiet-button" id="edit-preset">Ändra preset</button>'+button('back','Tillbaka') : editing ? button('back','Avbryt')+(presetDraft.id ? '<button type="button" class="quiet-button danger-button" id="delete-preset">Ta bort preset</button>' : '') :
+        '<button type="button" id="placeholders" aria-pressed="'+usePlaceholders+'">Placeholders (dev): '+(usePlaceholders ? 'på' : 'av')+'</button>');
     const list = screen.querySelector('ol');
-    names.forEach((name,i) => list.append(playerRow(name,i,list)));
-    for (const [id,delta] of [['less',-1],['more',1]]) {
-      const b = document.getElementById(id);
-      b.setAttribute('aria-label',delta>0?'Lägg till spelare':'Ta bort sista spelaren');
-      b.disabled = delta>0 ? names.length>=20 : names.length<=3;
-      b.onclick = () => changePlayers(delta, list);
-    }
-    on('placeholders', () => {
-      usePlaceholders = !usePlaceholders;
-      const toggle = document.getElementById('placeholders');
-      toggle.setAttribute('aria-pressed', String(usePlaceholders));
-      toggle.textContent = 'Placeholders (dev): ' + (usePlaceholders ? 'på' : 'av');
+    names.forEach((name, i) => {
+      const row = playerRow(name, i, list);
+      if (ordering) { const input = row.querySelector('input'); input.readOnly = true; input.value = label(i); }
+      list.append(row);
     });
-    bindPresets();
-    on('next',()=>go(1));
-  } else if (stage === 1) {
+    if (!ordering) {
+      changeNumber(document.querySelector('#player-count'), names.length, { animate: false });
+      for (const [id,delta] of [['less',-1],['more',1]]) {
+        const control = document.getElementById(id);
+        control.setAttribute('aria-label',delta>0?'Lägg till spelare':'Ta bort sista spelaren');
+        control.disabled = delta>0 ? names.length>=20 : names.length<=3;
+        control.onclick = () => changePlayers(delta, list);
+      }
+    }
+    if (editing) {
+      const input = document.querySelector('#preset-name'); input.value = presetDraft.name;
+      input.oninput = () => { presetDraft.name = input.value.trim(); };
+      const next = () => {
+        if (!presetDraft.name) { document.querySelector('#preset-status').textContent = 'Ge ditt preset ett namn.'; input.focus(); return; }
+        go(7);
+      };
+      input.onkeydown = event => { if (event.key === 'Enter') { event.preventDefault(); next(); } };
+      on('next', next);
+      on('back', () => closePreset());
+      if (presetDraft.id) on('delete-preset', () => {
+        const next = savedPresets.filter(item => item.id !== presetDraft.id);
+        if (!presetStore.write(next)) { document.querySelector('#preset-status').textContent = 'Kunde inte ta bort preset. Lagring är inte tillgänglig.'; return; }
+        savedPresets = next; closePreset('Presetet togs bort.');
+      });
+    } else if (ordering) {
+      on('next', () => { orderPreset = orderBackup = null; setupRound(); });
+      on('back', () => { applySetup(orderBackup); orderPreset = orderBackup = null; go(0); });
+      on('edit-preset', () => {
+        const preset = orderPreset;
+        applySetup(orderBackup); orderPreset = orderBackup = null;
+        beginPreset(preset);
+      });
+    } else {
+      bindPresetGrid();
+      on('placeholders', () => {
+        usePlaceholders = !usePlaceholders;
+        const toggle = document.getElementById('placeholders');
+        toggle.setAttribute('aria-pressed', String(usePlaceholders));
+        toggle.textContent = 'Placeholders (dev): ' + (usePlaceholders ? 'på' : 'av');
+      });
+      on('next', () => go(1));
+    }
+  } else if (stage === 1 || stage === 7) {
     function field(id, text, value, min, max, step = 1) {
       return '<div class="rule"><label for="'+id+'">'+text+'</label><div class="slider">'+
         '<span class="bubble" aria-hidden="true"><span class="changing-value"></span></span><input type="range" id="'+id+
         '" min="'+min+'" max="'+max+'" step="'+step+'" value="'+value+'"></div></div>';
     }
-    screen.innerHTML = title('Regler')+'<form>'+
+    screen.innerHTML = title(stage === 7 ? 'Regler för preset' : 'Regler')+(stage === 7 ? '<p class="page-intro">'+escape(presetDraft.name)+'</p>' : '')+'<form>'+
       '<fieldset class="settings-group"><legend>Snabbval</legend><div class="choice-row">'+
       ruleShortcuts.map((preset, i) => '<button type="button" data-shortcut="'+i+'" aria-pressed="false">'+preset.name+'</button>').join('')+
       '</div><p class="setting-note" id="shortcut-note" aria-live="polite">Välj ett upplägg eller justera själv.</p></fieldset>'+
@@ -531,7 +582,8 @@ function render() {
       '</div><p class="setting-note">Dra för att välja tid. 0 stänger av timern.</p></div>'+
       '<div class="settings-group"><span class="settings-heading">Kategorier</span><p class="setting-note">'+selectedPackages.length+' av '+wordPackages.length+' valda · '+words.filter(entry => selectedPackages.includes(entry.category)).length+' ord</p>'+
       '<button type="button" class="secondary-button category-link" id="choose-categories">Välj kategorier <span aria-hidden="true">→</span></button></div>'+
-      '<div id="presets"></div><button id="deal">Dela ut rollkort</button></form>'+button('back','Tillbaka till spelarna');
+      (stage === 7 ? '<p class="setting-note" id="preset-status" role="status"></p>' : '')+
+      '<button id="deal">'+(stage === 7 ? 'Spara preset' : 'Dela ut rollkort')+'</button></form>'+button('back',stage === 7 ? 'Tillbaka till presetet' : 'Tillbaka till spelarna');
     const form = screen.querySelector('form');
     const controls = [...form.querySelectorAll('input[type=number], input[type=range]')];
     const rulerControls = controls.filter(input => input.type === 'range');
@@ -737,9 +789,8 @@ function render() {
     on('choose-categories', () => {
       save(); categoryReturnStage = stage; categoryDraft = [...selectedPackages]; go(5);
     });
-    bindPresets(save);
-    form.onsubmit=e=>{ e.preventDefault(); save(); setupRound(); };
-    on('back',()=>{ if(form.checkValidity()) save(); go(0); });
+    form.onsubmit=e=>{ e.preventDefault(); save(); if (stage === 7) savePreset(); else setupRound(); };
+    on('back',()=>{ if(form.checkValidity()) save(); go(stage === 7 ? 6 : 0); });
   } else if (stage === 5) {
     screen.innerHTML = title('Kategorier')+'<div class="settings-toolbar"><p id="category-count" class="setting-note" role="status"></p>'+button('categories-all','Alla')+'</div>'+
       '<div class="selection-grid category-grid">'+wordPackages.map((category, i) =>
