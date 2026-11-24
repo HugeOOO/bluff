@@ -1,7 +1,7 @@
-import { createPresetStore } from './presets.js?v=104';
-import { createDiscussionTimer } from './discussion-timer.js?v=104';
-import { words } from './words.js?v=104';
-import { createWordDeck } from './word-deck.js?v=104';
+import { createPresetStore } from './presets.js?v=105';
+import { createDiscussionTimer } from './discussion-timer.js?v=105';
+import { words } from './words.js?v=105';
+import { createWordDeck } from './word-deck.js?v=105';
 
 const wordDeck = createWordDeck(words);
 const wordPackages = [...new Set(words.map(entry => entry.category))];
@@ -51,7 +51,7 @@ document.addEventListener('click', event => {
   if (event.detail === 0 && pressedButton(event)) haptic();
 }, true);
 document.addEventListener('change', event => {
-  if (event.target.matches('input[type=radio]')) haptic();
+  if (event.target.matches('input[type=radio], input[type=checkbox]')) haptic();
 });
 const names = ['', '', '', ''];
 // History follows the player when the order changes; special rounds do not count.
@@ -497,7 +497,7 @@ function render() {
         '<span class="bubble" aria-hidden="true"><span class="changing-value"></span></span><input type="range" id="'+id+
         '" min="'+min+'" max="'+max+'" value="'+value+'"></div></div>';
     }
-    screen.innerHTML = title('Regler')+'<form>'+ 
+    screen.innerHTML = title('Regler')+'<form>'+
       '<fieldset class="settings-group"><legend>Snabbval</legend><div class="choice-row">'+
       ruleShortcuts.map((preset, i) => '<button type="button" data-shortcut="'+i+'" aria-pressed="false">'+preset.name+'</button>').join('')+
       '</div><p class="setting-note" id="shortcut-note" aria-live="polite">Välj ett upplägg eller justera själv.</p></fieldset>'+
@@ -526,12 +526,14 @@ function render() {
       const totalWords = words.filter(entry => selectedPackages.includes(entry.category)).length;
       form.querySelector('#package-count').textContent = selectedPackages.length+' av '+wordPackages.length+' paket · '+totalWords+' ord';
       form.querySelector('#packages-all').setAttribute('aria-pressed', String(selectedPackages.length === wordPackages.length));
+      form.querySelector('#packages-all').setAttribute('aria-label', selectedPackages.length === wordPackages.length ? 'Avmarkera alla ordpaket' : 'Välj alla ordpaket');
       form.querySelector('#deal').disabled = selectedPackages.length === 0;
       form.querySelector('#package-error').hidden = selectedPackages.length > 0;
     }
     form.querySelectorAll('input[name="package"]').forEach(input => { input.onchange = refreshPackages; });
     on('packages-all', () => {
-      form.querySelectorAll('input[name="package"]').forEach(input => { input.checked = true; });
+      const selectAll = selectedPackages.length !== wordPackages.length;
+      form.querySelectorAll('input[name="package"]').forEach(input => { input.checked = selectAll; });
       refreshPackages();
     });
     refreshPackages();
