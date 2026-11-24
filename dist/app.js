@@ -1,8 +1,8 @@
-import { rulerSlidePosition } from './ruler-motion.js?v=117';
-import { createPresetStore } from './presets.js?v=117';
-import { createDiscussionTimer } from './discussion-timer.js?v=117';
-import { words } from './words.js?v=117';
-import { createWordDeck } from './word-deck.js?v=117';
+import { rulerSlidePosition } from './ruler-motion.js?v=118';
+import { createPresetStore } from './presets.js?v=118';
+import { createDiscussionTimer } from './discussion-timer.js?v=118';
+import { words } from './words.js?v=118';
+import { createWordDeck } from './word-deck.js?v=118';
 
 const wordDeck = createWordDeck(words);
 const wordPackages = [...new Set(words.map(entry => entry.category))];
@@ -14,8 +14,6 @@ let presetStorage;
 try { presetStorage = globalThis.localStorage; } catch {}
 const presetStore = createPresetStore(wordPackages, presetStorage ?? null);
 let savedPresets = presetStore.read();
-const placeholderPair = ['Hemligt ord', 'Ledtråd', 'Kategori'];
-let usePlaceholders = false;
 
 const screen = document.querySelector('#screen');
 const installButton = document.querySelector('#install');
@@ -391,7 +389,7 @@ function setupRound() {
   }
   bluffers = new Set(order.slice(0,n));
   starter = Math.floor(Math.random()*names.length);
-  pair = usePlaceholders ? placeholderPair : wordDeck.draw(selectedPackages);
+  pair = wordDeck.draw(selectedPackages);
   turn = 0; seen = false; go(2, 'forward');
 }
 function bindDrag(row, index, list) {
@@ -509,7 +507,7 @@ function render() {
       (editing ? '<p id="preset-status" class="setting-note" role="status"></p>' : '')+
       button('next', ordering ? 'Dela ut rollkort' : 'Till regler')+
       (ordering ? '<button type="button" class="quiet-button" id="edit-preset">Ändra preset</button>'+button('back','Tillbaka') : editing ? button('back','Avbryt')+(presetDraft.id ? '<button type="button" class="quiet-button danger-button" id="delete-preset">Ta bort preset</button>' : '') :
-        '<button type="button" id="placeholders" aria-pressed="'+usePlaceholders+'">Placeholders (dev): '+(usePlaceholders ? 'på' : 'av')+'</button>');
+        '');
     const list = screen.querySelector('ol');
     names.forEach((name, i) => {
       const row = playerRow(name, i, list);
@@ -550,12 +548,6 @@ function render() {
       });
     } else {
       bindPresetGrid();
-      on('placeholders', () => {
-        usePlaceholders = !usePlaceholders;
-        const toggle = document.getElementById('placeholders');
-        toggle.setAttribute('aria-pressed', String(usePlaceholders));
-        toggle.textContent = 'Placeholders (dev): ' + (usePlaceholders ? 'på' : 'av');
-      });
       on('next', () => go(1));
     }
   } else if (stage === 1 || stage === 7) {
