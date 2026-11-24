@@ -1,7 +1,7 @@
-import { createPresetStore } from './presets.js?v=109';
-import { createDiscussionTimer } from './discussion-timer.js?v=109';
-import { words } from './words.js?v=109';
-import { createWordDeck } from './word-deck.js?v=109';
+import { createPresetStore } from './presets.js?v=110';
+import { createDiscussionTimer } from './discussion-timer.js?v=110';
+import { words } from './words.js?v=110';
+import { createWordDeck } from './word-deck.js?v=110';
 
 const wordDeck = createWordDeck(words);
 const wordPackages = [...new Set(words.map(entry => entry.category))];
@@ -63,9 +63,9 @@ let hintMode = 'clue';
 let discussionSeconds = 0;
 const timerOptions = [[60, '1 min'], [180, '3 min'], [300, '5 min']];
 const ruleShortcuts = [
-  { name: 'Första gången', count: 1, special: 0, hint: 'clue', description: 'En bluffare med ledtråd. Inga överraskningar.' },
-  { name: 'Klassiskt', count: 1, special: 0, hint: 'none', description: 'En bluffare utan ledtråd. Läs av varandra.' },
-  { name: 'Kaos', count: 2, special: 25, hint: 'category', description: 'Två bluffare med kategori. 25 % chans att alla eller ingen bluffar.' }
+  { name: 'Första gången', count: 1, special: 0, hint: 'clue' },
+  { name: 'Klassiskt', count: 1, special: 0, hint: 'none' },
+  { name: 'Kaos', count: 2, special: 25, hint: 'category' }
 ];
 const hintFor = (entry, mode) => mode === 'category' ? entry[2] : mode === 'clue' ? entry[1] : '';
 function roleText(index) {
@@ -570,7 +570,7 @@ function render() {
     screen.innerHTML = title(stage === 7 ? 'Regler för preset' : 'Regler')+(stage === 7 ? '<p class="page-intro">'+escape(presetDraft.name)+'</p>' : '')+'<form>'+
       '<fieldset class="settings-group"><legend>Snabbval</legend><div class="choice-row">'+
       ruleShortcuts.map((preset, i) => '<button type="button" data-shortcut="'+i+'" aria-pressed="false">'+preset.name+'</button>').join('')+
-      '</div><p class="setting-note" id="shortcut-note" aria-live="polite">Välj ett upplägg eller justera själv.</p></fieldset>'+
+      '</div></fieldset>'+
       '<div class="rule count-rule" role="group" aria-labelledby="count-label"><span id="count-label" class="rule-label">Antal Bluffare</span>'+
       '<input type="number" id="count" min="1" max="'+(names.length-1)+'" value="'+count+'" hidden>'+
       '<div class="counter rule-counter"><button type="button" id="count-less" aria-label="Minska antal bluffare">−</button>'+
@@ -582,10 +582,10 @@ function render() {
       [['none','Ingen ledtråd'],['category','Kategori'],['clue','Ledtråd']].map(([value, text]) =>
         '<label><input type="radio" name="hint-mode" value="'+value+'"'+(hintMode === value ? ' checked' : '')+'><span>'+text+'</span></label>'
       ).join('')+'</div></fieldset>'+
-      '<div class="settings-group timer-setting">'+field('duration','Diskussionstimer',discussionSeconds,0,600,30)+'<div class="choice-row timer-shortcuts">'+
+      '<div class="settings-group timer-setting">'+field('duration','Diskussionstimer',discussionSeconds,0,600)+'<div class="choice-row timer-shortcuts">'+
       timerOptions.map(([seconds, text]) => '<button type="button" data-timer="'+seconds+'" aria-pressed="'+(seconds === discussionSeconds)+'">'+text+'</button>').join('')+
-      '</div><p class="setting-note">Dra för att välja tid. 0 stänger av timern.</p></div>'+
-      '<div class="settings-group"><span class="settings-heading">Kategorier</span><p class="setting-note">'+selectedPackages.length+' av '+wordPackages.length+' valda · '+words.filter(entry => selectedPackages.includes(entry.category)).length+' ord</p>'+
+      '</div></div>'+
+      '<div class="settings-group"><span class="settings-heading">Kategorier</span>'+
       '<button type="button" class="secondary-button category-link" id="choose-categories">Välj kategorier <span aria-hidden="true">→</span></button></div>'+
       (stage === 7 ? '<p class="setting-note" id="preset-status" role="status"></p>' : '')+
       '<button id="deal">'+(stage === 7 ? 'Spara preset' : 'Dela ut rollkort')+'</button></form>'+button('back',stage === 7 ? 'Tillbaka till presetet' : 'Tillbaka till spelarna');
@@ -598,8 +598,7 @@ function render() {
       if (input.id === 'count') return;
       const rule = input.closest('.rule');
       const radius = Math.max(1, rule.querySelector('.slider').clientWidth / 2 - 8);
-      const tickUnit = input.id === 'duration' ? 30 : 1;
-      const step = 10 / tickUnit;
+      const step = 10;
       const min = Number(input.min), max = Number(input.max);
       for (const tick of rule.querySelectorAll('.ruler-ticks i')) {
         const n = Number(tick.dataset.value);
@@ -620,14 +619,13 @@ function render() {
       const ticks = document.createElement('span');
       ticks.className = 'ruler-ticks';
       ticks.setAttribute('aria-hidden', 'true');
-      const tickUnit = input.id === 'duration' ? 30 : 1;
-      const step = 10 / tickUnit;
+      const step = 10;
       rule.style.setProperty('--tick-step', step + 'px');
-      for (let value = Number(input.min); value <= Number(input.max); value += tickUnit) {
+      for (let value = Number(input.min); value <= Number(input.max); value++) {
         const tick = document.createElement('i');
         tick.dataset.value = value;
-        if (value % (input.id === 'duration' ? 60 : 10) === 0) tick.classList.add('major');
-        else if (value % (input.id === 'duration' ? 30 : 5) === 0) tick.classList.add('mid');
+        if (value % (input.id === 'duration' ? 30 : 10) === 0) tick.classList.add('major');
+        else if (value % 5 === 0) tick.classList.add('mid');
         ticks.append(tick);
       }
       const rulerWindow = document.createElement('span');
@@ -641,7 +639,6 @@ function render() {
         Math.min(preset.count, names.length - 1) === form.elements.count.valueAsNumber &&
         preset.special === form.elements.special.valueAsNumber && preset.hint === form.elements['hint-mode'].value);
       form.querySelectorAll('[data-shortcut]').forEach((control, i) => control.setAttribute('aria-pressed', String(i === active)));
-      form.querySelector('#shortcut-note').textContent = active < 0 ? 'Egna regler. Justera precis som ni vill.' : ruleShortcuts[active].description;
       for (const input of controls) {
         if (input.id === 'count') {
           changeNumber(document.querySelector('#bluffer-count'), input.valueAsNumber, { animate });
@@ -667,8 +664,7 @@ function render() {
     for (const input of rulerControls) {
       const rule = input.closest('.rule');
       const track = rule.querySelector('.slider');
-      const tickUnit = input.id === 'duration' ? 30 : 1;
-      const step = 10 / tickUnit;
+      const step = 10;
       let pointer = null, startX = 0, original = 0, position = 0;
       let velocity = 0, lastX = 0, lastTime = 0, frame = null;
       const clamp = value => Math.max(Number(input.min), Math.min(Number(input.max), value));
@@ -689,7 +685,7 @@ function render() {
       function apply(value) {
         position = clamp(value);
         const previous = input.valueAsNumber;
-        input.value = Math.round(position / tickUnit) * tickUnit;
+        input.value = Math.round(position);
         if (input.valueAsNumber !== previous) haptic('tick');
         refresh(true, true);
         paintRuler(input, position);
@@ -699,7 +695,7 @@ function render() {
           const elapsed = Math.max(1, event.timeStamp - lastTime);
           const speed = (lastX - event.clientX) / (step * elapsed);
           velocity = .65 * speed + .35 * velocity;
-          const limit = .15 * tickUnit;
+          const limit = .15;
           velocity = Math.max(-limit, Math.min(limit, velocity));
           lastX = event.clientX;
           lastTime = event.timeStamp;
@@ -708,7 +704,7 @@ function render() {
       }
       function snap(momentum = false) {
         const previous = input.valueAsNumber;
-        input.value = momentum ? snapToNotch(position) : clamp(Math.round(position / tickUnit) * tickUnit);
+        input.value = momentum ? snapToNotch(position) : clamp(Math.round(position));
         if (input.valueAsNumber !== previous) haptic('tick');
         position = input.valueAsNumber;
         frame = null;
