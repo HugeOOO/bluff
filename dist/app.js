@@ -623,7 +623,7 @@ function render() {
     hold.onkeyup=e=>{ if([' ','Enter'].includes(e.key)){ e.preventDefault(); hide(); } };
     on('next',()=>{ hide(); advancePlayer(hold, next); });
   } else if (stage === 3) {
-    screen.innerHTML=title(escape(label(starter))+' börjar')+button('next','Visa resultat');
+    screen.innerHTML=title('<span class="starter-name">'+escape(label(starter))+'</span> <span class="starter-caption">börjar</span>')+button('next','Visa resultat');
     on('next',()=>go(4));
   } else {
     const who=names.map((_,i)=>i).filter(i=>bluffers.has(i)).map(i=>escape(label(i))).join(', ');
@@ -637,15 +637,92 @@ function render() {
     on('again',setupRound); on('back',()=>go(0));
   }
 }
+function showStarter(hold) {
+  const previousHeading = screen.querySelector('h1');
+  const from = previousHeading.getBoundingClientRect();
+  const cardRect = hold.getBoundingClientRect();
+  const previousName = previousHeading.textContent;
+  const flight = document.createElement('div');
+  flight.className = 'card-flight';
+  flight.inert = true;
+  flight.setAttribute('aria-hidden', 'true');
+  const card = document.createElement('div');
+  card.className = 'secret secret-flight-card';
+  card.innerHTML = secretMarkup();
+  Object.assign(card.style, {
+    left: cardRect.left + 'px', top: cardRect.top + 'px',
+    width: cardRect.width + 'px', height: cardRect.height + 'px'
+  });
+  flight.append(card);
+  document.body.append(flight);
+  go(3);
+  delete screen.dataset.entry;
+  const name = screen.querySelector('.starter-name');
+  const caption = screen.querySelector('.starter-caption');
+  const next = screen.querySelector('#next');
+  const to = name.getBoundingClientRect();
+  const movingName = document.createElement('h1');
+  movingName.className = 'name-flight';
+  Object.assign(movingName.style, {
+    left: from.left + 'px', top: from.top + 'px', width: from.width + 'px'
+  });
+  const oldWord = document.createElement('span');
+  const newWord = document.createElement('span');
+  oldWord.className = newWord.className = 'starter-morph-word';
+  oldWord.textContent = previousName;
+  newWord.textContent = name.textContent;
+  movingName.append(oldWord, newWord);
+  flight.append(movingName);
+  name.classList.add('name-transitioning');
+  next.disabled = true;
+  const dx = to.left - from.left, dy = to.top - from.top;
+  const move = movingName.animate([
+    { transform: 'translate3d(0,0,0) scale(1)', offset: 0, easing: 'cubic-bezier(.45,0,.2,1)' },
+    { transform: `translate3d(${dx}px,${dy + 10}px,0) scale(1.025)`, offset: .75, easing: 'ease-out' },
+    { transform: `translate3d(${dx}px,${dy - 2}px,0) scale(.995)`, offset: .9, easing: 'ease-out' },
+    { transform: `translate3d(${dx}px,${dy}px,0) scale(1)`, offset: 1 }
+  ], { duration: 850, fill: 'both' });
+  const morphOut = oldWord.animate([
+    { opacity: 1, filter: 'blur(0px)', transform: 'scale(1)' },
+    { opacity: 0, filter: 'blur(3px)', transform: 'scale(.94)' }
+  ], { duration: 270, delay: 180, easing: motion.easing, fill: 'both' });
+  const morphIn = newWord.animate([
+    { opacity: 0, filter: 'blur(3px)', transform: 'scale(1.06)' },
+    { opacity: 1, filter: 'blur(0px)', transform: 'scale(1)' }
+  ], { duration: 350, delay: 280, easing: motion.easing, fill: 'both' });
+  // The outgoing card stays covered and clipped independently of the page.
+  const distance = cardRect.right + cardRect.height * .4 + 48;
+  const leave = card.animate(Array.from({ length: 31 }, (_, index) => {
+    const t = index / 30;
+    return { offset: t, transform: `translate3d(${-distance * t * t}px,${-180 * t + 220 * t * t}px,0) rotate(${-24 * t}deg)` };
+  }), { duration: 490, fill: 'both' });
+  const explain = caption.animate([
+    { opacity: 0, transform: 'translateY(8px)' },
+    { opacity: 1, transform: 'translateY(0)' }
+  ], { duration: 240, delay: 650, easing: motion.easing, fill: 'both' });
+  const action = next.animate([{ opacity: 0 }, { opacity: 1 }],
+    { duration: 220, delay: 680, fill: 'both' });
+  const animations = [move, morphOut, morphIn, leave, explain, action];
+  const finish = () => animations.forEach(animation => animation.finish());
+  reducedMotion.addEventListener('change', finish, { once: true });
+  Promise.allSettled(animations.map(animation => animation.finished)).then(() => {
+    reducedMotion.removeEventListener('change', finish);
+    name.classList.remove('name-transitioning');
+    flight.remove();
+    next.disabled = false;
+    animations.forEach(animation => animation.cancel());
+  });
+}
 function advancePlayer(hold, next) {
   if (next.disabled || !seen) return;
   next.disabled = true;
   seen = false;
   turn++;
-  if (turn === names.length || reducedMotion.matches) {
+  if (reducedMotion.matches) {
     go(turn === names.length ? 3 : 2);
     return;
   }
+  if (turn === names.length) { showStarter(hold); return; }
 
   const rect = hold.getBoundingClientRect();
   const previousHeading = screen.querySelector('h1');
